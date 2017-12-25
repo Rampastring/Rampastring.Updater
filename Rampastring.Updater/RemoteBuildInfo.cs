@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Rampastring.Updater
 {
+    /// <summary>
+    /// Represents a remote product build on a server.
+    /// </summary>
     public class RemoteBuildInfo : BuildInfo<RemoteFileInfo>
     {
         /// <summary>

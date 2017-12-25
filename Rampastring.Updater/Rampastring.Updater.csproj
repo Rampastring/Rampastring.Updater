@@ -40,6 +40,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BuildInfo.cs" />
+    <Compile Include="IFileInfo.cs" />
     <Compile Include="LocalBuildInfo.cs" />
     <Compile Include="HashHelper.cs" />
     <Compile Include="IniFile.cs" />
@@ -47,7 +49,10 @@
     <Compile Include="ParseException.cs" />
     <Compile Include="ProductVersionInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RemoteBuildInfo.cs" />
     <Compile Include="RemoteFileInfo.cs" />
+    <Compile Include="UpdateMirror.cs" />
+    <Compile Include="Updater.cs" />
     <Compile Include="UpdaterLogger.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

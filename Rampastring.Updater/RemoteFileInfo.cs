@@ -58,5 +58,15 @@ namespace Rampastring.Updater
                 HashHelper.BytesToString(CompressedHash),
                 CompressedSize.ToString(CultureInfo.InvariantCulture));
         }
+
+        /// <summary>
+        /// Returns the size of the file for downloading.
+        /// (UncompressedSize for uncompressed files, CompressedSize for compressed files)
+        /// </summary>
+        public long GetDownloadSize()
+        {
+            long size = Compressed ? CompressedSize : UncompressedSize;
+            return size;
+        }
     }
 }

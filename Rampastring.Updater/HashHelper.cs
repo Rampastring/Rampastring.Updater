@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Globalization;
+using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Rampastring.Updater
@@ -55,6 +57,16 @@ namespace Rampastring.Updater
             // https://stackoverflow.com/questions/43289/comparing-two-byte-arrays-in-net/8808245#8808245
             // - but this should be fast enough for our use case
 
+            if (array1 == null)
+            {
+                if (array2 != null)
+                    return false;
+
+                return true;
+            }
+            else if (array2 == null)
+                return false;
+
             if (array1.Length != array2.Length)
                 return false;
 
@@ -65,6 +77,26 @@ namespace Rampastring.Updater
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Computes a SHA1 hash for a file.
+        /// Returns null if the file does not exist.
+        /// </summary>
+        /// <param name="filePath">The path of the file.</param>
+        /// <returns>A byte array, or null.</returns>
+        public static byte[] ComputeHashForFile(string filePath)
+        {
+            if (!File.Exists(filePath))
+                return null;
+
+            using (SHA1 sha1 = new SHA1CryptoServiceProvider())
+            {
+                using (Stream stream = File.OpenRead(filePath))
+                {
+                    return sha1.ComputeHash(stream);
+                }
+            }
         }
     }
 }

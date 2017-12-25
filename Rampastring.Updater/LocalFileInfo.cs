@@ -12,19 +12,30 @@ namespace Rampastring.Updater
     /// <summary>
     /// Represents a file on the local system.
     /// </summary>
-    public class LocalFileInfo
+    public class LocalFileInfo : IFileInfo
     {
+        /// <summary>
+        /// The relative path to the file.
+        /// </summary>
         public string FilePath { get; private set; }
+
+        /// <summary>
+        /// The (SHA1) hash of the file.
+        /// </summary>
         public byte[] Hash { get; private set; }
+
+        /// <summary>
+        /// The size of the file in bytes.
+        /// </summary>
         public long Size { get; private set; }
+
 
         /// <summary>
         /// Parses a string array that represents a LocalFileInfo object
-        /// and returns a new LocalFileInfo object based on the given string array.
+        /// and assigns the properties of this instance based on the given string array.
         /// </summary>
         /// <param name="parts">The string array.</param>
-        /// <returns>A LocalFileInfo object.</returns>
-        public static LocalFileInfo Parse(string[] parts)
+        public void Parse(string[] parts)
         {
             if (parts.Length != 3)
                 throw new ParseException("The input string array has an invalid number of items.");
@@ -33,8 +44,6 @@ namespace Rampastring.Updater
             fInfo.FilePath = parts[0];
             fInfo.Hash = HashHelper.BytesFromHexString(parts[1]);
             fInfo.Size = long.Parse(parts[2]);
-
-            return null;
         }
 
         /// <summary>
@@ -57,17 +66,8 @@ namespace Rampastring.Updater
         /// <param name="buildPath">The base path of the build.</param>
         public bool MatchesActualFile(string buildPath)
         {
-            if (!File.Exists(buildPath + FilePath))
-                return false;
-
-            using (SHA1 sha1 = new SHA1CryptoServiceProvider())
-            {
-                using (Stream stream = File.OpenRead(buildPath + FilePath))
-                {
-                    byte[] hash = sha1.ComputeHash(stream);
-                    return HashHelper.ByteArraysMatch(hash, this.Hash);
-                }
-            }
+            return HashHelper.ByteArraysMatch(Hash,
+                HashHelper.ComputeHashForFile(buildPath + FilePath));
         }
     }
 }

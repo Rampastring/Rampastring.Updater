@@ -10,7 +10,7 @@ namespace Rampastring.Updater
     /// <summary>
     /// Represents a file on the update server.
     /// </summary>
-    class RemoteFileInfo
+    public class RemoteFileInfo : IFileInfo
     {
         public string FilePath { get; private set; }
         public byte[] UncompressedHash { get; private set; }
@@ -25,10 +25,10 @@ namespace Rampastring.Updater
         /// </summary>
         /// <param name="parts">The string array.</param>
         /// <returns>A RemoteFileInfo object.</returns>
-        public static RemoteFileInfo Parse(string[] parts)
+        public void Parse(string[] parts)
         {
             if (parts.Length < 4 || parts.Length > 6)
-                throw new ArgumentException("Invalid size for parts: " + parts.Length);
+                throw new ParseException("Invalid size for parts: " + parts.Length);
 
             var fileInfo = new RemoteFileInfo();
             fileInfo.FilePath = parts[0];
@@ -41,8 +41,6 @@ namespace Rampastring.Updater
                 fileInfo.CompressedHash = HashHelper.BytesFromHexString(parts[4]);
                 fileInfo.CompressedSize = long.Parse(parts[5], CultureInfo.InvariantCulture);
             }
-
-            return fileInfo;
         }
 
         /// <summary>

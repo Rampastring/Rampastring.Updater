@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -10,7 +12,7 @@ namespace Rampastring.Updater
     /// <summary>
     /// Represents a file on the local system.
     /// </summary>
-    class LocalFileInfo
+    public class LocalFileInfo
     {
         public string FilePath { get; private set; }
         public byte[] Hash { get; private set; }
@@ -46,6 +48,26 @@ namespace Rampastring.Updater
                 FilePath,
                 HashHelper.BytesToString(Hash),
                 Size.ToString(CultureInfo.InvariantCulture));
+        }
+
+        /// <summary>
+        /// Checks whether this file information matches an actual file on the
+        /// file system.
+        /// </summary>
+        /// <param name="buildPath">The base path of the build.</param>
+        public bool MatchesActualFile(string buildPath)
+        {
+            if (!File.Exists(buildPath + FilePath))
+                return false;
+
+            using (SHA1 sha1 = new SHA1CryptoServiceProvider())
+            {
+                using (Stream stream = File.OpenRead(buildPath + FilePath))
+                {
+                    byte[] hash = sha1.ComputeHash(stream);
+                    return HashHelper.ByteArraysMatch(hash, this.Hash);
+                }
+            }
         }
     }
 }

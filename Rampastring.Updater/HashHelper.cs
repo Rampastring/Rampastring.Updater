@@ -42,5 +42,29 @@ namespace Rampastring.Updater
 
             return bytes;
         }
+
+        /// <summary>
+        /// Checks whether two byte arrays have identical contents.
+        /// </summary>
+        /// <param name="array1">The first byte array.</param>
+        /// <param name="array2">The second byte array.</param>
+        /// <returns>True if the arrays match, otherwise false.</returns>
+        public static bool ByteArraysMatch(byte[] array1, byte[] array2)
+        {
+            // There are faster ways of doing this, see
+            // https://stackoverflow.com/questions/43289/comparing-two-byte-arrays-in-net/8808245#8808245
+            // - but this should be fast enough for our use case
+
+            if (array1.Length != array2.Length)
+                return false;
+
+            for (int i = 0; i < array1.Length; i++)
+            {
+                if (array1[i] != array2[i])
+                    return false;
+            }
+
+            return true;
+        }
     }
 }

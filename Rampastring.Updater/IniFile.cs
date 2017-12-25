@@ -527,6 +527,7 @@ namespace Rampastring.Updater
 
         /// <summary>
         /// Gets the names of all INI keys in the specified INI section.
+        /// Returns null if the section doesn't exist.
         /// </summary>
         public List<string> GetSectionKeys(string sectionName)
         {

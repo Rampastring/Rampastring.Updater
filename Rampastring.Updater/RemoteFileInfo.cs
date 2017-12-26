@@ -68,5 +68,25 @@ namespace Rampastring.Updater
             long size = Compressed ? CompressedSize : UncompressedSize;
             return size;
         }
+
+        /// <summary>
+        /// Returns the expected hash of this file for downloading.
+        /// </summary>
+        public byte[] GetDownloadHash()
+        {
+            byte[] hash = Compressed ? CompressedHash : UncompressedHash;
+            return hash;
+        }
+
+        /// <summary>
+        /// Returns the name of this file for downloading.
+        /// </summary>
+        public string GetDownloadFileName()
+        {
+            if (Compressed)
+                return FilePath + ".lzma";
+
+            return FilePath;
+        }
     }
 }

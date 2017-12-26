@@ -22,9 +22,9 @@ namespace Rampastring.Updater
             LocalBuildInfo.BuildPath = localBuildPath;
         }
 
-        public LocalBuildInfo LocalBuildInfo { get; private set; }
+        private LocalBuildInfo LocalBuildInfo { get; set; }
 
-        public RemoteBuildInfo RemoteBuildInfo { get; private set; }
+        private RemoteBuildInfo RemoteBuildInfo { get; set; }
 
         public BuildState BuildState { get; set; }
 
@@ -76,12 +76,15 @@ namespace Rampastring.Updater
                 updateCheckInProgress = true;
             }
 
-            Thread thread = new Thread(new ParameterizedThreadStart(unused => CheckForUpdatesInternal(onFailed, onUpToDate, onOutdated)));
+            Thread thread = new Thread(new ParameterizedThreadStart(unused => 
+                CheckForUpdatesInternal(onFailed, onUpToDate, onOutdated)));
             thread.Start();
         }
 
         private void CheckForUpdatesInternal(Action onFailed, Action onUpToDate, Action<string, long> onOutdated)
         {
+            UpdaterLogger.Log("Checking for updates.");
+
             updateMirrors = updateMirrors.OrderBy(um => um.Rating).ToList();
 
             using (var webClient = new WebClient())
@@ -121,13 +124,14 @@ namespace Rampastring.Updater
 
                         if (RemoteBuildInfo.ProductVersionInfo.VersionNumber == LocalBuildInfo.ProductVersionInfo.VersionNumber)
                         {
+                            BuildState = BuildState.UPTODATE;
                             onUpToDate?.Invoke();
                             return;
                         }
                         else
                         {
-                            // TODO determine update size
-                            onOutdated?.Invoke(RemoteBuildInfo.ProductVersionInfo.DisplayString, 0);
+                            BuildState = BuildState.OUTDATED;
+                            onOutdated?.Invoke(RemoteBuildInfo.ProductVersionInfo.DisplayString, GetUpdateSize());
                             return;
                         }
                     }
@@ -147,9 +151,9 @@ namespace Rampastring.Updater
                         i++;
                     }
                 }
-
-                UpdaterLogger.Log("Failed to download version information from all update mirrors. Aborting.");
             }
+
+            UpdaterLogger.Log("Failed to download version information from all update mirrors. Aborting.");
 
             lock (locker)
             {
@@ -192,6 +196,76 @@ namespace Rampastring.Updater
         }
 
         /// <summary>
+        /// Performs an update asynchronously.
+        /// </summary>
+        /// <param name="onFailed"></param>
+        /// <param name="onWaitingForRestart"></param>
+        /// <param name="onProgress"></param>
+        public void PerformUpdate(Action<string> onFailed, Action onWaitingForRestart,
+            Action<UpdateProgressState, string, int, int> onProgress)
+        {
+            lock (locker)
+            {
+                if (updateCheckInProgress || updateInProgress)
+                    return;
+
+                if (RemoteBuildInfo == null)
+                    throw new InvalidOperationException("You need to succesfully check for updates before calling PerformUpdate.");
+
+                if (BuildState != BuildState.OUTDATED)
+                    throw new InvalidOperationException("The current version is not out of date!");
+
+                updateInProgress = true;
+            }
+
+            Thread thread = new Thread(new ParameterizedThreadStart(unused =>
+                PerformUpdateInternal(onFailed, onWaitingForRestart, onProgress)));
+            thread.Start();
+        }
+
+        private void PerformUpdateInternal(Action<string> onFailed, Action onWaitingForRestart,
+            Action<UpdateProgressState, string, int, int> onProgress)
+        {
+            UpdaterLogger.Log("Performing update.");
+
+            CreateTemporaryDirectory();
+
+            UpdateMirror updateMirror = updateMirrors[lastUpdateMirrorId];
+
+            List<RemoteFileInfo> filesToDownload = new List<RemoteFileInfo>();
+
+            string buildPath = LocalBuildInfo.BuildPath;
+            string downloadDirectory = buildPath + TEMPORARY_UPDATER_DIRECTORY + Path.DirectorySeparatorChar;
+
+            foreach (var remoteFileInfo in RemoteBuildInfo.FileInfos)
+            {
+                if (!File.Exists(buildPath + remoteFileInfo.FilePath))
+                {
+                    if (!File.Exists(downloadDirectory + remoteFileInfo.GetDownloadFileName()))
+                    {
+                        filesToDownload.Add(remoteFileInfo);
+                        continue;
+                    }
+
+                    // The file already exists in the download directory, check whether
+                    // its hash matches that of the file we'd download
+
+                    if (!HashHelper.ByteArraysMatch(remoteFileInfo.GetDownloadHash(),
+                        HashHelper.ComputeHashForFile(downloadDirectory + remoteFileInfo.GetDownloadFileName())))
+                    {
+                        // If not, add it to the list of files to be downloaded
+                        filesToDownload.Add(remoteFileInfo);
+                        continue;
+                    }
+                }
+                else
+                {
+
+                }
+            }
+        }
+
+        /// <summary>
         /// Creates the temporary updater directory if it doesn't already exist.
         /// </summary>
         private void CreateTemporaryDirectory()
@@ -206,5 +280,11 @@ namespace Rampastring.Updater
         UNKNOWN,
         UPTODATE,
         OUTDATED
+    }
+
+    public enum UpdateProgressState
+    {
+        PREPARING,
+        DOWNLOADING
     }
 }

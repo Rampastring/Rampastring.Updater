@@ -98,5 +98,15 @@ namespace Rampastring.Updater
                 }
             }
         }
+
+        /// <summary>
+        /// Checks whether the SHA1 hash of a specific file matches a given hash.
+        /// </summary>
+        /// <param name="filePath">The path to the file.</param>
+        /// <param name="hash">The hash that the file's hash will be compared against.</param>
+        public static bool FileHashMatches(string filePath, byte[] hash)
+        {
+            return ByteArraysMatch(hash, ComputeHashForFile(filePath));
+        }
     }
 }

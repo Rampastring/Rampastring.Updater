@@ -16,6 +16,9 @@ namespace Rampastring.Updater
         private const string LOCAL_BUILD_INFO_FILE = "LocalVersion";
         private const string TEMPORARY_UPDATER_DIRECTORY = "Updater";
 
+        public delegate void ProgressDelegate(UpdateProgressState updateState, 
+            string statusString, int currentPercent, int totalPercent);
+
         public Updater(string localBuildPath)
         {
             LocalBuildInfo = new LocalBuildInfo();
@@ -198,11 +201,13 @@ namespace Rampastring.Updater
         /// <summary>
         /// Performs an update asynchronously.
         /// </summary>
-        /// <param name="onFailed"></param>
-        /// <param name="onWaitingForRestart"></param>
-        /// <param name="onProgress"></param>
+        /// <param name="onFailed">The function to call if the update fails.</param>
+        /// <param name="onWaitingForRestart">The function to call when the updater
+        /// has finished downloading files and is waiting for the restart command.</param>
+        /// <param name="onProgress">The function to call when the update progress
+        /// is changed.</param>
         public void PerformUpdate(Action<string> onFailed, Action onWaitingForRestart,
-            Action<UpdateProgressState, string, int, int> onProgress)
+            ProgressDelegate onProgress)
         {
             lock (locker)
             {
@@ -224,7 +229,7 @@ namespace Rampastring.Updater
         }
 
         private void PerformUpdateInternal(Action<string> onFailed, Action onWaitingForRestart,
-            Action<UpdateProgressState, string, int, int> onProgress)
+            ProgressDelegate onProgress)
         {
             UpdaterLogger.Log("Performing update.");
 
@@ -232,35 +237,85 @@ namespace Rampastring.Updater
 
             UpdateMirror updateMirror = updateMirrors[lastUpdateMirrorId];
 
-            List<RemoteFileInfo> filesToDownload = new List<RemoteFileInfo>();
-
             string buildPath = LocalBuildInfo.BuildPath;
             string downloadDirectory = buildPath + TEMPORARY_UPDATER_DIRECTORY + Path.DirectorySeparatorChar;
 
-            foreach (var remoteFileInfo in RemoteBuildInfo.FileInfos)
+            List<RemoteFileInfo> filesToDownload = GatherFilesToDownload(buildPath, downloadDirectory,
+                onProgress);
+
+            CleanUpDownloadDirectory(filesToDownload, downloadDirectory);
+
+            // TODO actually download the files
+        }
+
+        /// <summary>
+        /// Gathers a list of files to download for the update.
+        /// </summary>
+        private List<RemoteFileInfo> GatherFilesToDownload(string buildPath,
+            string downloadDirectory, ProgressDelegate onProgress)
+        {
+            List<RemoteFileInfo> filesToDownload = new List<RemoteFileInfo>();
+
+            // This could be multithreaded later on for faster processing,
+            // calculating the SHA1 hashes can take a lot of time
+
+            for (int i = 0; i < RemoteBuildInfo.FileInfos.Count; i++)
             {
+                var remoteFileInfo = RemoteBuildInfo.FileInfos[i];
+
+                onProgress(UpdateProgressState.PREPARING, string.Empty,
+                    (int)(i / (double)RemoteBuildInfo.FileInfos.Count * 100.0), 0);
+
                 if (!File.Exists(buildPath + remoteFileInfo.FilePath))
                 {
-                    if (!File.Exists(downloadDirectory + remoteFileInfo.GetDownloadFileName()))
+                    if (!File.Exists(downloadDirectory + remoteFileInfo.FilePath))
                     {
+                        UpdaterLogger.Log("File " + remoteFileInfo.FilePath + " doesn't exist, adding it to the download queue.");
                         filesToDownload.Add(remoteFileInfo);
-                        continue;
                     }
-
-                    // The file already exists in the download directory, check whether
-                    // its hash matches that of the file we'd download
-
-                    if (!HashHelper.ByteArraysMatch(remoteFileInfo.GetDownloadHash(),
-                        HashHelper.ComputeHashForFile(downloadDirectory + remoteFileInfo.GetDownloadFileName())))
+                    else if (!HashHelper.FileHashMatches(downloadDirectory + remoteFileInfo.FilePath,
+                        remoteFileInfo.UncompressedHash))
                     {
-                        // If not, add it to the list of files to be downloaded
+                        UpdaterLogger.Log("File " + remoteFileInfo.FilePath + " exists in the " +
+                            "temporary directory, but it's different from the remote version. Adding it to the download queue.");
                         filesToDownload.Add(remoteFileInfo);
-                        continue;
                     }
                 }
                 else
                 {
+                    if (!HashHelper.FileHashMatches(buildPath + remoteFileInfo.FilePath, remoteFileInfo.UncompressedHash))
+                    {
+                        UpdaterLogger.Log("File " + remoteFileInfo.FilePath + " is different from the " +
+                            "remote version, adding it to the download queue.");
+                        filesToDownload.Add(remoteFileInfo);
+                    }
+                    else
+                        UpdaterLogger.Log("File " + remoteFileInfo.FilePath + " is up to date.");
+                }
+            }
 
+            return filesToDownload;
+        }
+
+        /// <summary>
+        /// Cleans up the temporary download directory. Deletes files that don't
+        /// exist in the download queue.
+        /// </summary>
+        /// <param name="filesToDownload">A list of files to download.</param>
+        private void CleanUpDownloadDirectory(List<RemoteFileInfo> filesToDownload, string downloadDirectory)
+        {
+            string[] files = Directory.GetFiles(downloadDirectory);
+
+            foreach (string filePath in files)
+            {
+                // Remove the download directory from the file path
+                string subPath = filePath.Substring(downloadDirectory.Length);
+
+                if (filesToDownload.Find(fi => fi.FilePath == subPath) == null)
+                {
+                    UpdaterLogger.Log("Deleting file " + subPath + " from the download " + 
+                        "directory as part of the clean-up process.");
+                    File.Delete(filePath);
                 }
             }
         }
@@ -285,6 +340,7 @@ namespace Rampastring.Updater
     public enum UpdateProgressState
     {
         PREPARING,
-        DOWNLOADING
+        DOWNLOADING,
+        EXTRACTING
     }
 }

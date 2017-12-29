@@ -41,6 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BuildInfo.cs" />
+    <Compile Include="UpdateDownloader.cs" />
     <Compile Include="IFileInfo.cs" />
     <Compile Include="LocalBuildInfo.cs" />
     <Compile Include="HashHelper.cs" />

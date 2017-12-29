@@ -90,7 +90,7 @@ namespace Rampastring.Updater
 
             updateMirrors = updateMirrors.OrderBy(um => um.Rating).ToList();
 
-            using (var webClient = new WebClient())
+            using (WebClient webClient = CreateWebClient())
             {
                 webClient.CachePolicy = new RequestCachePolicy(RequestCacheLevel.NoCacheNoStore);
                 webClient.Encoding = Encoding.GetEncoding(1252);
@@ -245,7 +245,10 @@ namespace Rampastring.Updater
 
             CleanUpDownloadDirectory(filesToDownload, downloadDirectory);
 
-            // TODO actually download the files
+            UpdaterLogger.Log("Creating downloader.");
+
+            UpdateDownloader fileUpdater = new UpdateDownloader();
+            fileUpdater.Update(buildPath, downloadDirectory, filesToDownload, updateMirror);
         }
 
         /// <summary>
@@ -327,6 +330,15 @@ namespace Rampastring.Updater
         {
             if (!Directory.Exists(LocalBuildInfo.BuildPath + TEMPORARY_UPDATER_DIRECTORY))
                 Directory.CreateDirectory(LocalBuildInfo.BuildPath + TEMPORARY_UPDATER_DIRECTORY);
+        }
+
+        private WebClient CreateWebClient()
+        {
+            return new WebClient()
+            {
+                CachePolicy = new RequestCachePolicy(RequestCacheLevel.NoCacheNoStore),
+                Encoding = Encoding.GetEncoding(1252)
+            };
         }
     }
 

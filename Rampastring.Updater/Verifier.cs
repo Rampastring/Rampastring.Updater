@@ -46,7 +46,10 @@ namespace Rampastring.Updater
         /// <param name="remoteFileInfo">The file.</param>
         public void DecompressAndVerifyFile(RemoteFileInfo remoteFileInfo)
         {
-            throw new NotImplementedException();
+            lock (locker)
+            {
+                filesToCheck.Add(remoteFileInfo);
+            }
         }
     }
 

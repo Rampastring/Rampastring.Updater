@@ -41,6 +41,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BuildInfo.cs" />
+    <Compile Include="Compression\LZMA\LzmaBase.cs" />
+    <Compile Include="Compression\LZMA\LzmaDecoder.cs" />
+    <Compile Include="Compression\LZMA\LzmaEncoder.cs" />
+    <Compile Include="Compression\LZ\IMatchFinder.cs" />
+    <Compile Include="Compression\LZ\LzBinTree.cs" />
+    <Compile Include="Compression\LZ\LzInWindow.cs" />
+    <Compile Include="Compression\LZ\LzOutWindow.cs" />
+    <Compile Include="Compression\RangeCoder\RangeCoder.cs" />
+    <Compile Include="Compression\RangeCoder\RangeCoderBit.cs" />
+    <Compile Include="Compression\RangeCoder\RangeCoderBitTree.cs" />
     <Compile Include="UpdateDownloader.cs" />
     <Compile Include="IFileInfo.cs" />
     <Compile Include="LocalBuildInfo.cs" />

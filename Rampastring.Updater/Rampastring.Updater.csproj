@@ -41,6 +41,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BuildInfo.cs" />
+    <Compile Include="Compression\Common\CommandLineParser.cs" />
+    <Compile Include="Compression\Common\CRC.cs" />
+    <Compile Include="Compression\Common\InBuffer.cs" />
+    <Compile Include="Compression\Common\OutBuffer.cs" />
+    <Compile Include="Compression\ICoder.cs" />
     <Compile Include="Compression\LZMA\LzmaBase.cs" />
     <Compile Include="Compression\LZMA\LzmaDecoder.cs" />
     <Compile Include="Compression\LZMA\LzmaEncoder.cs" />

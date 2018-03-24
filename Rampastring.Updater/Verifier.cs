@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Rampastring.Updater
@@ -14,18 +16,14 @@ namespace Rampastring.Updater
         public Verifier(string downloadDirectory)
         {
             this.downloadDirectory = downloadDirectory;
+            verifierTask = new Task(VerifyFiles);
         }
-
-        /// <summary>
-        /// Raised when decompressing a compressed file fails.
-        /// </summary>
-        public event EventHandler<FilePathEventArgs> DecompressionFailed;
 
         /// <summary>
         /// Raised when a downloaded file didn't pass the verification check
         /// (meaning its hash is different from what the version information claims).
         /// </summary>
-        public event EventHandler<FilePathEventArgs> VerificationFailed;
+        public event EventHandler<IndexEventArgs> VerificationFailed;
 
         /// <summary>
         /// Raised when the thread has succesfully finished decompressing
@@ -35,31 +33,140 @@ namespace Rampastring.Updater
 
         private string downloadDirectory;
 
-        private List<RemoteFileInfo> filesToCheck = new List<RemoteFileInfo>();
+        private List<IndexedRemoteFileInfo> filesToCheck = new List<IndexedRemoteFileInfo>();
+
+        private Task verifierTask;
+        private EventWaitHandle waitHandle;
+
+        private volatile bool queueReady = false;
+        private volatile bool stopped = false;
 
         private readonly object locker = new object();
 
         /// <summary>
         /// Adds the specified file to the decompress-and-verify queue.
         /// If the file is not compressed, it'll only be verified.
+        /// Also starts a Task to verify the files when called for the first time.
         /// </summary>
         /// <param name="remoteFileInfo">The file.</param>
-        public void DecompressAndVerifyFile(RemoteFileInfo remoteFileInfo)
+        public void VerifyFile(IndexedRemoteFileInfo remoteFileInfo)
         {
             lock (locker)
             {
                 filesToCheck.Add(remoteFileInfo);
+
+                if (verifierTask == null)
+                {
+                    waitHandle = new EventWaitHandle(true, EventResetMode.AutoReset);
+
+                    verifierTask = new Task(VerifyFiles);
+                    verifierTask.Start();
+                }
             }
+
+            waitHandle.Set();
+        }
+
+        /// <summary>
+        /// Signals the verifier that no more files will be added to the verify queue,
+        /// assuming that the currently pending files are correctly verified.
+        /// Allows the verifier thread to exit.
+        /// </summary>
+        public void SetQueueReady()
+        {
+            queueReady = true;
+
+            if (waitHandle != null)
+                waitHandle.Set();
+        }
+
+        /// <summary>
+        /// Signals the verifier to stop.
+        /// It's safe to call this 
+        /// </summary>
+        public void Stop()
+        {
+            stopped = true;
+
+            if (waitHandle != null)
+                waitHandle.Set();
+        }
+
+        private void VerifyFiles()
+        {
+            while (true)
+            {
+                IndexedRemoteFileInfo indexedFileInfo;
+
+                if (stopped)
+                    break;
+
+                lock (locker)
+                {
+                    indexedFileInfo = filesToCheck[0];
+                }
+
+                RemoteFileInfo fileInfo = indexedFileInfo.FileInfo;
+
+                if (fileInfo.Compressed)
+                {
+                    // TODO uncompress it
+                }
+
+                if (!HashHelper.FileHashMatches(downloadDirectory + fileInfo.FilePath, fileInfo.UncompressedHash))
+                {
+                    UpdaterLogger.Log("File " + fileInfo.FilePath + " failed verification!");
+                    VerificationFailed?.Invoke(this, new IndexEventArgs(indexedFileInfo.Index));
+                    queueReady = false;
+                }
+                else
+                    UpdaterLogger.Log("File " + fileInfo.FilePath + " passed verification.");
+
+                lock (locker)
+                {
+                    filesToCheck.RemoveAt(0);
+                }
+
+                bool waitingForWork = false;
+
+                lock (locker)
+                {
+                    waitingForWork = filesToCheck.Count == 0;
+
+                    if (queueReady && waitingForWork)
+                    {
+                        Completed?.Invoke(this, EventArgs.Empty);
+                        break;
+                    }
+
+                    //if (stopped)
+                    //{
+                    //    filesToCheck.Clear();
+                    //    break;
+                    //}
+                }
+
+                if (waitingForWork)
+                    waitHandle.WaitOne();
+            }
+
+            waitHandle.Dispose();
+
+            // We could also dispose of verifierTask, but it sounds like we don't need to bother
+            // https://blogs.msdn.microsoft.com/pfxteam/2012/03/25/do-i-need-to-dispose-of-tasks/
+            // In case we'd still want to do it, it'd be safest for this class to have a function
+            // for disposing the task (maybe this class could implement IDisposable), and the
+            // user of this class would then call it
         }
     }
 
-    class FilePathEventArgs : EventArgs
+    class IndexEventArgs : EventArgs
     {
-        public FilePathEventArgs(string filePath)
+        public IndexEventArgs(int index)
         {
-            FilePath = filePath;
+            Index = index;
         }
 
-        public string FilePath { get; private set; }
+        public int Index { get; private set; }
     }
 }

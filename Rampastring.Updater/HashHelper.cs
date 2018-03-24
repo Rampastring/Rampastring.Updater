@@ -59,10 +59,7 @@ namespace Rampastring.Updater
 
             if (array1 == null)
             {
-                if (array2 != null)
-                    return false;
-
-                return true;
+                return array2 == null;
             }
             else if (array2 == null)
                 return false;

@@ -56,6 +56,7 @@
     <Compile Include="Compression\RangeCoder\RangeCoder.cs" />
     <Compile Include="Compression\RangeCoder\RangeCoderBit.cs" />
     <Compile Include="Compression\RangeCoder\RangeCoderBitTree.cs" />
+    <Compile Include="IndexedRemoteFileInfo.cs" />
     <Compile Include="UpdateDownloader.cs" />
     <Compile Include="IFileInfo.cs" />
     <Compile Include="LocalBuildInfo.cs" />

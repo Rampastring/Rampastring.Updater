@@ -1,4 +1,5 @@
-﻿using Rampastring.Updater.Compression;
+﻿using Rampastring.Updater.BuildInfo;
+using Rampastring.Updater.Compression;
 using System;
 using System.Collections.Generic;
 using System.Threading;

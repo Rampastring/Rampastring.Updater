@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Rampastring.Updater
+namespace Rampastring.Updater.BuildInfo
 {
     /// <summary>
     /// Represents a local product build. Includes product version information 

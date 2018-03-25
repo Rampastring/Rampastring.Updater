@@ -40,7 +40,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BuildInfo.cs" />
+    <Compile Include="BuildInfo\BuildInfo.cs" />
     <Compile Include="Compression\Common\CommandLineParser.cs" />
     <Compile Include="Compression\Common\CRC.cs" />
     <Compile Include="Compression\Common\InBuffer.cs" />
@@ -57,23 +57,23 @@
     <Compile Include="Compression\RangeCoder\RangeCoder.cs" />
     <Compile Include="Compression\RangeCoder\RangeCoderBit.cs" />
     <Compile Include="Compression\RangeCoder\RangeCoderBitTree.cs" />
-    <Compile Include="DownloadProgressEventArgs.cs" />
-    <Compile Include="IndexedRemoteFileInfo.cs" />
+    <Compile Include="BuildInfo\IndexedRemoteFileInfo.cs" />
     <Compile Include="UpdateDownloader.cs" />
-    <Compile Include="IFileInfo.cs" />
-    <Compile Include="LocalBuildInfo.cs" />
+    <Compile Include="BuildInfo\IFileInfo.cs" />
+    <Compile Include="BuildInfo\LocalBuildInfo.cs" />
     <Compile Include="HashHelper.cs" />
     <Compile Include="IniFile.cs" />
-    <Compile Include="LocalFileInfo.cs" />
+    <Compile Include="BuildInfo\LocalFileInfo.cs" />
     <Compile Include="ParseException.cs" />
-    <Compile Include="ProductVersionInfo.cs" />
+    <Compile Include="BuildInfo\ProductVersionInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RemoteBuildInfo.cs" />
-    <Compile Include="RemoteFileInfo.cs" />
+    <Compile Include="BuildInfo\RemoteBuildInfo.cs" />
+    <Compile Include="BuildInfo\RemoteFileInfo.cs" />
     <Compile Include="UpdateMirror.cs" />
     <Compile Include="Updater.cs" />
     <Compile Include="UpdaterLogger.cs" />
     <Compile Include="Verifier.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

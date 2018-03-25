@@ -7,7 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Rampastring.Updater
+namespace Rampastring.Updater.BuildInfo
 {
     /// <summary>
     /// Represents a file on the local system.

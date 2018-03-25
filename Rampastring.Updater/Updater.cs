@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -19,24 +20,79 @@ namespace Rampastring.Updater
         public delegate void ProgressDelegate(UpdateProgressState updateState, 
             string statusString, int currentPercent, int totalPercent);
 
-        public Updater(string localBuildPath)
+        #region Events
+
+        /// <summary>
+        /// Raised when a check for updates fails.
+        /// </summary>
+        public event EventHandler UpdateCheckFailed;
+
+        /// <summary>
+        /// Raised when the local build is determined to be up to
+        /// date in an update check.
+        /// </summary>
+        public event EventHandler BuildUpToDate;
+
+        /// <summary>
+        /// Raised when the local build is determined to be out of
+        /// date in an update check.
+        /// </summary>
+        public event EventHandler<BuildOutdatedEventArgs> BuildOutdated;
+
+        /// <summary>
+        /// Raised when the updater has finished downloading all files.
+        /// The program needs to clean its session and shut itself down.
+        /// </summary>
+        public event EventHandler DownloadCompleted;
+
+        /// <summary>
+        /// Raised when the update has been cancelled due to the host program
+        /// requesting so.
+        /// </summary>
+        public event EventHandler UpdateCancelled;
+
+        /// <summary>
+        /// Raised when there's been progress during an update.
+        /// </summary>
+        public event EventHandler<UpdateProgressEventArgs> UpdateProgressChanged;
+
+        /// <summary>
+        /// Raised when performing an update fails.
+        /// </summary>
+        public event EventHandler<UpdateFailureEventArgs> UpdateFailed;
+        
+        #endregion
+
+        public Updater(string localBuildPath, string secondStageUpdaterPath)
         {
-            LocalBuildInfo = new LocalBuildInfo();
-            LocalBuildInfo.BuildPath = localBuildPath;
+            localBuildInfo = new LocalBuildInfo();
+            localBuildInfo.BuildPath = localBuildPath;
+            SecondStageUpdaterPath = secondStageUpdaterPath;
         }
 
-        private LocalBuildInfo LocalBuildInfo { get; set; }
+        public BuildState BuildState { get; private set; }
 
-        private RemoteBuildInfo RemoteBuildInfo { get; set; }
+        /// <summary>
+        /// The path to the second-stage updater executable,
+        /// relative to the local build path.
+        /// The second-stage updater is launched during the update process when
+        /// all files have been downloaded and extracted.
+        /// The second-stage updater applies the downloaded files by moving
+        /// them from the temporary updater directory to the local build's main
+        /// directory.
+        /// </summary>
+        public string SecondStageUpdaterPath { get; private set; }
 
-        public BuildState BuildState { get; set; }
+        private LocalBuildInfo localBuildInfo;
+
+        private RemoteBuildInfo remoteBuildInfo;
 
         private List<UpdateMirror> updateMirrors = new List<UpdateMirror>();
 
         private readonly object locker = new object();
 
-        private bool updateCheckInProgress = false;
-        private bool updateInProgress = false;
+        private volatile bool updateCheckInProgress = false;
+        private volatile bool updateInProgress = false;
 
         private int lastUpdateMirrorId = 0;
 
@@ -57,19 +113,19 @@ namespace Rampastring.Updater
         /// </summary>
         public void ReadLocalBuildInfo()
         {
-            LocalBuildInfo.Parse(LocalBuildInfo.BuildPath + LOCAL_BUILD_INFO_FILE);
+            localBuildInfo.Parse(localBuildInfo.BuildPath + LOCAL_BUILD_INFO_FILE);
+        }
+
+        public string GetLocalVersionDisplayString()
+        {
+            return localBuildInfo.ProductVersionInfo.DisplayString;
         }
 
         /// <summary>
         /// Starts an asynchronous check for updates if an update check or update
         /// isn't already in progress.
         /// </summary>
-        /// <param name="onFailed">The function to call when the update check fails.</param>
-        /// <param name="onUpToDate">The function to call when the local version
-        /// is determined to be up to date.</param>
-        /// <param name="onOutdated">The function to call when the local version
-        /// is determined to be outdated.</param>
-        public void CheckForUpdates(Action onFailed, Action onUpToDate, Action<string, long> onOutdated)
+        public void CheckForUpdates()
         {
             lock (locker)
             {
@@ -79,12 +135,11 @@ namespace Rampastring.Updater
                 updateCheckInProgress = true;
             }
 
-            Thread thread = new Thread(new ParameterizedThreadStart(unused => 
-                CheckForUpdatesInternal(onFailed, onUpToDate, onOutdated)));
+            Thread thread = new Thread(new ThreadStart(CheckForUpdatesInternal));
             thread.Start();
         }
 
-        private void CheckForUpdatesInternal(Action onFailed, Action onUpToDate, Action<string, long> onOutdated)
+        private void CheckForUpdatesInternal()
         {
             UpdaterLogger.Log("Checking for updates.");
 
@@ -101,7 +156,7 @@ namespace Rampastring.Updater
 
                 UpdateMirror updateMirror;
 
-                string downloadDirectory = LocalBuildInfo.BuildPath + TEMPORARY_UPDATER_DIRECTORY + Path.DirectorySeparatorChar;
+                string downloadDirectory = localBuildInfo.BuildPath + TEMPORARY_UPDATER_DIRECTORY + Path.DirectorySeparatorChar;
 
                 while (i < updateMirrors.Count)
                 {
@@ -115,8 +170,8 @@ namespace Rampastring.Updater
 
                         UpdaterLogger.Log("Version information downloaded, proceeding to parsing it.");
 
-                        RemoteBuildInfo = new RemoteBuildInfo();
-                        RemoteBuildInfo.Parse(downloadDirectory + REMOTE_BUILD_INFO_FILE);
+                        remoteBuildInfo = new RemoteBuildInfo();
+                        remoteBuildInfo.Parse(downloadDirectory + REMOTE_BUILD_INFO_FILE);
 
                         lastUpdateMirrorId = i;
 
@@ -125,16 +180,17 @@ namespace Rampastring.Updater
                             updateCheckInProgress = false;
                         }
 
-                        if (RemoteBuildInfo.ProductVersionInfo.VersionNumber == LocalBuildInfo.ProductVersionInfo.VersionNumber)
+                        if (remoteBuildInfo.ProductVersionInfo.VersionNumber == localBuildInfo.ProductVersionInfo.VersionNumber)
                         {
                             BuildState = BuildState.UPTODATE;
-                            onUpToDate?.Invoke();
+                            BuildUpToDate?.Invoke(this, EventArgs.Empty);
                             return;
                         }
                         else
                         {
                             BuildState = BuildState.OUTDATED;
-                            onOutdated?.Invoke(RemoteBuildInfo.ProductVersionInfo.DisplayString, GetUpdateSize());
+                            BuildOutdated?.Invoke(this, new BuildOutdatedEventArgs(
+                                remoteBuildInfo.ProductVersionInfo.DisplayString, GetUpdateSize()));
                             return;
                         }
                     }
@@ -163,7 +219,7 @@ namespace Rampastring.Updater
                 updateCheckInProgress = false;
             }
 
-            onFailed?.Invoke();
+            UpdateCheckFailed?.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>
@@ -179,13 +235,12 @@ namespace Rampastring.Updater
             // long for a quick update check. Instead we'll check the actual file
             // hashes when actually downloading the update.
             // This is why the calculated update size could only be an estimate
-            // (although most of the time it'll be correct for everyone who 
-            // doesn't modify the product).
+            // (although it'll be correct for everyone who doesn't modify the product).
 
             long updateSize = 0;
 
-            LocalBuildInfo lbi = LocalBuildInfo;
-            RemoteBuildInfo rbi = RemoteBuildInfo;
+            LocalBuildInfo lbi = localBuildInfo;
+            RemoteBuildInfo rbi = remoteBuildInfo;
 
             foreach (var fileInfo in rbi.FileInfos)
             {
@@ -201,21 +256,15 @@ namespace Rampastring.Updater
         /// <summary>
         /// Performs an update asynchronously.
         /// </summary>
-        /// <param name="onFailed">The function to call if the update fails.</param>
-        /// <param name="onWaitingForRestart">The function to call when the updater
-        /// has finished downloading files and is waiting for the restart command.</param>
-        /// <param name="onProgress">The function to call when the update progress
-        /// is changed.</param>
-        public void PerformUpdate(Action<string> onFailed, Action onWaitingForRestart,
-            ProgressDelegate onProgress)
+        public void PerformUpdate()
         {
             lock (locker)
             {
                 if (updateCheckInProgress || updateInProgress)
                     return;
 
-                if (RemoteBuildInfo == null)
-                    throw new InvalidOperationException("You need to succesfully check for updates before calling PerformUpdate.");
+                if (remoteBuildInfo == null)
+                    throw new InvalidOperationException("An update check needs to pass succesfully before PerformUpdate is called.");
 
                 if (BuildState != BuildState.OUTDATED)
                     throw new InvalidOperationException("The current version is not out of date!");
@@ -223,13 +272,12 @@ namespace Rampastring.Updater
                 updateInProgress = true;
             }
 
-            Thread thread = new Thread(new ParameterizedThreadStart(unused =>
-                PerformUpdateInternal(onFailed, onWaitingForRestart, onProgress)));
+            Thread thread = new Thread(new ThreadStart(
+                PerformUpdateInternal));
             thread.Start();
         }
 
-        private void PerformUpdateInternal(Action<string> onFailed, Action onWaitingForRestart,
-            ProgressDelegate onProgress)
+        private void PerformUpdateInternal()
         {
             UpdaterLogger.Log("Performing update.");
 
@@ -237,37 +285,84 @@ namespace Rampastring.Updater
 
             UpdateMirror updateMirror = updateMirrors[lastUpdateMirrorId];
 
-            string buildPath = LocalBuildInfo.BuildPath;
+            string buildPath = localBuildInfo.BuildPath;
             string downloadDirectory = buildPath + TEMPORARY_UPDATER_DIRECTORY + Path.DirectorySeparatorChar;
 
-            List<RemoteFileInfo> filesToDownload = GatherFilesToDownload(buildPath, downloadDirectory,
-                onProgress);
+            List<RemoteFileInfo> filesToDownload = GatherFilesToDownload(buildPath, downloadDirectory);
 
             CleanUpDownloadDirectory(filesToDownload, downloadDirectory);
 
             UpdaterLogger.Log("Creating downloader.");
 
-            UpdateDownloader fileUpdater = new UpdateDownloader();
-            fileUpdater.Update(buildPath, downloadDirectory, filesToDownload, updateMirror);
+            UpdateDownloader downloader = new UpdateDownloader();
+            downloader.DownloadProgress += Downloader_DownloadProgress;
+            UpdateDownloadResult result = downloader.DownloadUpdates(buildPath, downloadDirectory, filesToDownload, updateMirror);
+            downloader.DownloadProgress -= Downloader_DownloadProgress;
+
+            lock (locker)
+            {
+                updateInProgress = false;
+            }
+
+            switch (result.UpdateDownloadResultState)
+            {
+                case UpdateDownloadResultType.CANCELLED:
+                    UpdateCancelled?.Invoke(this, EventArgs.Empty);
+                    return;
+                case UpdateDownloadResultType.COMPLETED:
+                    // If a new second-stage updater was downloaded, update it
+                    // first before launching it
+
+                    string originalSecondStageUpdaterPath = localBuildInfo.BuildPath +
+                        Path.DirectorySeparatorChar + SecondStageUpdaterPath;
+
+                    string updatedSecondStageUpdaterPath = localBuildInfo.BuildPath +
+                        TEMPORARY_UPDATER_DIRECTORY + Path.DirectorySeparatorChar +
+                        SecondStageUpdaterPath;
+
+                    if (File.Exists(updatedSecondStageUpdaterPath))
+                    {
+                        File.Delete(originalSecondStageUpdaterPath);
+                        File.Move(updatedSecondStageUpdaterPath, originalSecondStageUpdaterPath);
+                    }
+
+                    Process.Start(originalSecondStageUpdaterPath);
+
+                    // No null checking necessary here, it's actually better to
+                    // crash the application in case this is not subscribed to
+                    DownloadCompleted.Invoke(this, EventArgs.Empty);
+                    return;
+                case UpdateDownloadResultType.FAILED:
+                    UpdateFailed?.Invoke(this, new UpdateFailureEventArgs(result.ErrorDescription));
+                    return;
+            }
+        }
+
+        private void Downloader_DownloadProgress(object sender, DownloadProgressEventArgs e)
+        {
+            UpdateProgressChanged?.Invoke(this, new UpdateProgressEventArgs(UpdateProgressState.DOWNLOADING,
+                (int)(e.TotalBytesReceived / (double)e.TotalBytesToDownload * 100.0),
+                (int)(e.BytesReceivedFromFile / (double)e.CurrentFileSize * 100.0), e.CurrentFilePath));
         }
 
         /// <summary>
         /// Gathers a list of files to download for the update.
         /// </summary>
         private List<RemoteFileInfo> GatherFilesToDownload(string buildPath,
-            string downloadDirectory, ProgressDelegate onProgress)
+            string downloadDirectory)
         {
             List<RemoteFileInfo> filesToDownload = new List<RemoteFileInfo>();
 
             // This could be multithreaded later on for faster processing,
             // calculating the SHA1 hashes can take a lot of time
 
-            for (int i = 0; i < RemoteBuildInfo.FileInfos.Count; i++)
+            for (int i = 0; i < remoteBuildInfo.FileInfos.Count; i++)
             {
-                var remoteFileInfo = RemoteBuildInfo.FileInfos[i];
+                var remoteFileInfo = remoteBuildInfo.FileInfos[i];
 
-                onProgress(UpdateProgressState.PREPARING, string.Empty,
-                    (int)(i / (double)RemoteBuildInfo.FileInfos.Count * 100.0), 0);
+                UpdateProgressChanged?.Invoke(this, new UpdateProgressEventArgs(
+                    UpdateProgressState.PREPARING, 0,
+                    (int)(i / (double)remoteBuildInfo.FileInfos.Count * 100.0), string.Empty));
 
                 if (!File.Exists(buildPath + remoteFileInfo.FilePath))
                 {
@@ -328,8 +423,8 @@ namespace Rampastring.Updater
         /// </summary>
         private void CreateTemporaryDirectory()
         {
-            if (!Directory.Exists(LocalBuildInfo.BuildPath + TEMPORARY_UPDATER_DIRECTORY))
-                Directory.CreateDirectory(LocalBuildInfo.BuildPath + TEMPORARY_UPDATER_DIRECTORY);
+            if (!Directory.Exists(localBuildInfo.BuildPath + TEMPORARY_UPDATER_DIRECTORY))
+                Directory.CreateDirectory(localBuildInfo.BuildPath + TEMPORARY_UPDATER_DIRECTORY);
         }
 
         private WebClient CreateWebClient()
@@ -351,8 +446,67 @@ namespace Rampastring.Updater
 
     public enum UpdateProgressState
     {
+        /// <summary>
+        /// The updater is gathering information on which files it needs to download.
+        /// </summary>
         PREPARING,
-        DOWNLOADING,
-        EXTRACTING
+
+        /// <summary>
+        /// The updater is downloading and extracting files.
+        /// </summary>
+        DOWNLOADING
+    }
+
+    public class BuildOutdatedEventArgs : EventArgs
+    {
+        public BuildOutdatedEventArgs(string versionDisplayString,
+            long estimatedUpdateSize)
+        {
+            VersionDisplayString = versionDisplayString;
+            EstimatedUpdateSize = estimatedUpdateSize;
+        }
+
+        public string VersionDisplayString { get; private set; }
+        public long EstimatedUpdateSize { get; private set; }
+    }
+
+    public class UpdateProgressEventArgs : EventArgs
+    {
+        public UpdateProgressEventArgs(UpdateProgressState state,
+            int totalPercentage, int processPercentage, string processDescription)
+        {
+            State = state;
+            TotalPercentage = totalPercentage;
+            ProcessPercentage = processPercentage;
+            ProcessDescription = processDescription;
+        }
+
+
+        public UpdateProgressState State { get; private set; }
+
+        /// <summary>
+        /// The progress percentage of the whole update session.
+        /// </summary>
+        public int TotalPercentage { get; private set; }
+
+        /// <summary>
+        /// The progress percentage of the current operation.
+        /// </summary>
+        public int ProcessPercentage { get; private set; }
+
+        /// <summary>
+        /// The description of the current operation.
+        /// </summary>
+        public string ProcessDescription { get; private set; }
+    }
+
+    public class UpdateFailureEventArgs : EventArgs
+    {
+        public UpdateFailureEventArgs(string message)
+        {
+            ErrorMessage = message;
+        }
+
+        public string ErrorMessage { get; private set; }
     }
 }

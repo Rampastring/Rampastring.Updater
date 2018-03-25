@@ -66,7 +66,7 @@ namespace Rampastring.Updater
         /// <param name="downloadDirectory">The download directory.</param>
         /// <param name="filesToDownload">A list of files to download.</param>
         /// <param name="updateMirror">The update mirror to use.</param>
-        public UpdateDownloadResult Update(string buildPath, string downloadDirectory,
+        public UpdateDownloadResult DownloadUpdates(string buildPath, string downloadDirectory,
             List<RemoteFileInfo> filesToDownload, UpdateMirror updateMirror)
         {
             if (filesToDownload.Count == 0)
@@ -293,25 +293,5 @@ namespace Rampastring.Updater
         COMPLETED,
         FAILED,
         CANCELLED
-    }
-
-    class DownloadProgressEventArgs : EventArgs
-    {
-        public DownloadProgressEventArgs(long totalBytesReceived,
-            long totalBytesToDownload, long bytesReceivedFromFile,
-            long currentFileSize, string currentFilePath)
-        {
-            TotalBytesReceived = totalBytesReceived;
-            TotalBytesToDownload = totalBytesToDownload;
-            BytesReceivedFromFile = bytesReceivedFromFile;
-            CurrentFileSize = currentFileSize;
-            CurrentFilePath = currentFilePath;
-        }
-
-        public long TotalBytesReceived { get; private set; }
-        public long TotalBytesToDownload { get; private set; }
-        public long BytesReceivedFromFile { get; private set; }
-        public long CurrentFileSize { get; private set; }
-        public string CurrentFilePath { get; private set; }
     }
 }

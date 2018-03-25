@@ -1,8 +1,6 @@
-﻿using System;
+﻿using Rampastring.Updater.Compression;
+using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -108,19 +106,38 @@ namespace Rampastring.Updater
 
                 RemoteFileInfo fileInfo = indexedFileInfo.FileInfo;
 
+                bool checkFileHash = true;
+
                 if (fileInfo.Compressed)
                 {
-                    // TODO uncompress it
+                    try
+                    {
+                        CompressionHelper.DecompressFile(downloadDirectory + fileInfo.GetDownloadFileName(),
+                            downloadDirectory + fileInfo.FilePath);
+                    }
+                    catch (Exception ex) 
+                    {
+                        // The SevenZip compressor doesn't define what exceptions
+                        // it might throw, so we'll just catch them all
+
+                        UpdaterLogger.Log("Decompressing file " + fileInfo.FilePath + " failed! Message: " + ex.Message);
+                        VerificationFailed?.Invoke(this, new IndexEventArgs(indexedFileInfo.Index));
+                        queueReady = false;
+                        checkFileHash = false;
+                    }
                 }
 
-                if (!HashHelper.FileHashMatches(downloadDirectory + fileInfo.FilePath, fileInfo.UncompressedHash))
+                if (checkFileHash)
                 {
-                    UpdaterLogger.Log("File " + fileInfo.FilePath + " failed verification!");
-                    VerificationFailed?.Invoke(this, new IndexEventArgs(indexedFileInfo.Index));
-                    queueReady = false;
+                    if (!HashHelper.FileHashMatches(downloadDirectory + fileInfo.FilePath, fileInfo.UncompressedHash))
+                    {
+                        UpdaterLogger.Log("File " + fileInfo.FilePath + " failed verification!");
+                        VerificationFailed?.Invoke(this, new IndexEventArgs(indexedFileInfo.Index));
+                        queueReady = false;
+                    }
+                    else
+                        UpdaterLogger.Log("File " + fileInfo.FilePath + " passed verification.");
                 }
-                else
-                    UpdaterLogger.Log("File " + fileInfo.FilePath + " passed verification.");
 
                 lock (locker)
                 {

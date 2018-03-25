@@ -123,6 +123,8 @@ namespace SecondStageUpdater
             mutex.ReleaseMutex();
             mutex.Dispose();
 
+            Directory.Delete(buildPath + TEMPORARY_UPDATER_DIRECTORY, true);
+
             FilesMoved(this, EventArgs.Empty);
         }
 
@@ -131,7 +133,8 @@ namespace SecondStageUpdater
         /// </summary>
         public void Proceed()
         {
-            waitHandle.Set();
+            if (waitHandle != null)
+                waitHandle.Set();
         }
 
         /// <summary>

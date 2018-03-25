@@ -140,5 +140,10 @@ namespace SecondStageUpdater
         {
             fileMover.Abort();
         }
+
+        private void GenericKeyPress(object sender, KeyPressEventArgs e)
+        {
+            fileMover.Proceed();
+        }
     }
 }

@@ -42,6 +42,7 @@
             this.listBox1.Name = "listBox1";
             this.listBox1.Size = new System.Drawing.Size(584, 249);
             this.listBox1.TabIndex = 0;
+            this.listBox1.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.GenericKeyPress);
             // 
             // lblDescription
             // 
@@ -74,6 +75,7 @@
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.Form1_FormClosed);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.Shown += new System.EventHandler(this.Form1_Shown);
+            this.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.GenericKeyPress);
             this.ResumeLayout(false);
             this.PerformLayout();
 

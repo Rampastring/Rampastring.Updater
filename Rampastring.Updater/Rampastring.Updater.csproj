@@ -70,7 +70,7 @@
     <Compile Include="BuildInfo\RemoteBuildInfo.cs" />
     <Compile Include="BuildInfo\RemoteFileInfo.cs" />
     <Compile Include="UpdateMirror.cs" />
-    <Compile Include="Updater.cs" />
+    <Compile Include="BuildHandler.cs" />
     <Compile Include="UpdaterLogger.cs" />
     <Compile Include="Verifier.cs" />
   </ItemGroup>

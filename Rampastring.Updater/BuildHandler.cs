@@ -12,7 +12,10 @@ using System.Threading.Tasks;
 
 namespace Rampastring.Updater
 {
-    public class Updater
+    /// <summary>
+    /// Handles information about the local build and updating the local build.
+    /// </summary>
+    public class BuildHandler
     {
         private const string REMOTE_BUILD_INFO_FILE = "ServerVersion";
         private const string LOCAL_BUILD_INFO_FILE = "LocalVersion";
@@ -64,7 +67,7 @@ namespace Rampastring.Updater
         
         #endregion
 
-        public Updater(string localBuildPath, string secondStageUpdaterPath)
+        public BuildHandler(string localBuildPath, string secondStageUpdaterPath)
         {
             localBuildInfo = new LocalBuildInfo();
             localBuildInfo.BuildPath = localBuildPath;

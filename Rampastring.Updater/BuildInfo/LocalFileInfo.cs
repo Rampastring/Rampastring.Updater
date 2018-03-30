@@ -14,6 +14,15 @@ namespace Rampastring.Updater.BuildInfo
     /// </summary>
     public class LocalFileInfo : IFileInfo
     {
+        public LocalFileInfo() { }
+
+        public LocalFileInfo(string filePath, byte[] hash, long size)
+        {
+            FilePath = filePath;
+            Hash = hash;
+            Size = size;
+        }
+
         /// <summary>
         /// The relative path to the file.
         /// </summary>

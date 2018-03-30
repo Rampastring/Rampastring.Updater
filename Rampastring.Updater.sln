@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rampastring.Updater", "Ramp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecondStageUpdater", "SecondStageUpdater\SecondStageUpdater.csproj", "{F831B075-EA10-4EAC-9A0A-2182AB4A2DED}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VersionWriter", "VersionWriter\VersionWriter.csproj", "{2376EBA2-D1E4-435B-8A84-055169FD9569}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{F831B075-EA10-4EAC-9A0A-2182AB4A2DED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F831B075-EA10-4EAC-9A0A-2182AB4A2DED}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F831B075-EA10-4EAC-9A0A-2182AB4A2DED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2376EBA2-D1E4-435B-8A84-055169FD9569}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2376EBA2-D1E4-435B-8A84-055169FD9569}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2376EBA2-D1E4-435B-8A84-055169FD9569}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2376EBA2-D1E4-435B-8A84-055169FD9569}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -12,6 +12,20 @@ namespace Rampastring.Updater.BuildInfo
     /// </summary>
     public class RemoteFileInfo : IFileInfo
     {
+        public RemoteFileInfo() { }
+
+        public RemoteFileInfo(string filePath, byte[] uncompressedHash,
+            long uncompressedSize, bool compressed,
+            byte[] compressedHash = null, long compressedSize = 0)
+        {
+            FilePath = filePath;
+            UncompressedHash = uncompressedHash;
+            UncompressedSize = uncompressedSize;
+            Compressed = compressed;
+            CompressedHash = compressedHash;
+            CompressedSize = compressedSize;
+        }
+
         public string FilePath { get; private set; }
         public byte[] UncompressedHash { get; private set; }
         public long UncompressedSize { get; private set; }
@@ -21,13 +35,12 @@ namespace Rampastring.Updater.BuildInfo
 
         /// <summary>
         /// Parses a string array that represents a RemoteFileInfo object
-        /// and returns a new RemoteFileInfo object based on the given string array.
+        /// and assigns the properties of this instance based on the given string array.
         /// </summary>
         /// <param name="parts">The string array.</param>
-        /// <returns>A RemoteFileInfo object.</returns>
         public void Parse(string[] parts)
         {
-            if (parts.Length < 4 || parts.Length > 6)
+            if (parts.Length < 4)
                 throw new ParseException("Invalid size for parts: " + parts.Length);
 
             var fileInfo = new RemoteFileInfo();
@@ -38,6 +51,9 @@ namespace Rampastring.Updater.BuildInfo
 
             if (compressed)
             {
+                if (parts.Length != 6)
+                    throw new ParseException("Invalid size for parts: " + parts.Length);
+
                 fileInfo.CompressedHash = HashHelper.BytesFromHexString(parts[4]);
                 fileInfo.CompressedSize = long.Parse(parts[5], CultureInfo.InvariantCulture);
             }
@@ -50,11 +66,20 @@ namespace Rampastring.Updater.BuildInfo
         /// <returns>A string representation of this object.</returns>
         public string GetString()
         {
+            if (Compressed)
+            {
+                return String.Join(",",
+                FilePath,
+                HashHelper.BytesToString(UncompressedHash),
+                UncompressedSize.ToString(CultureInfo.InvariantCulture),
+                Convert.ToInt32(Compressed).ToString());
+            }
+
             return String.Join(",",
                 FilePath,
                 HashHelper.BytesToString(UncompressedHash),
                 UncompressedSize.ToString(CultureInfo.InvariantCulture),
-                Convert.ToInt16(Compressed).ToString(),
+                Convert.ToInt32(Compressed).ToString(),
                 HashHelper.BytesToString(CompressedHash),
                 CompressedSize.ToString(CultureInfo.InvariantCulture));
         }

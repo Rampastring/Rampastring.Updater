@@ -615,6 +615,16 @@ namespace Rampastring.Updater
                 Keys.Add(new KeyValuePair<string, string>(keyName, value));
         }
 
+        public List<string> GetKeys()
+        {
+            List<string> keys = new List<string>();
+
+            foreach (var kvp in Keys)
+                keys.Add(kvp.Key);
+
+            return keys;
+        }
+
         /// <summary>
         /// Returns a string value from the INI section.
         /// </summary>

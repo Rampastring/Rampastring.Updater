@@ -17,9 +17,9 @@ namespace Rampastring.Updater
     /// </summary>
     public class BuildHandler
     {
-        private const string REMOTE_BUILD_INFO_FILE = "ServerVersion";
-        private const string LOCAL_BUILD_INFO_FILE = "LocalVersion";
-        private const string TEMPORARY_UPDATER_DIRECTORY = "Updater";
+        public const string REMOTE_BUILD_INFO_FILE = "ServerVersion";
+        public const string LOCAL_BUILD_INFO_FILE = "LocalVersion";
+        public const string TEMPORARY_UPDATER_DIRECTORY = "Updater";
 
         public delegate void ProgressDelegate(UpdateProgressState updateState, 
             string statusString, int currentPercent, int totalPercent);

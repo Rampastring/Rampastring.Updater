@@ -134,8 +134,8 @@ namespace Rampastring.Updater
                             return CleanUpAndReturnResult(UpdateDownloadResultType.CANCELLED);
 
                         downloadTask = webClient.DownloadFileTaskAsync(
-                            new Uri(updateMirror.URL + currentlyDownloadedFile.GetDownloadFileName().Replace('\\', '/')),
-                            downloadDirectory + currentlyDownloadedFile.GetDownloadFileName());
+                            new Uri(updateMirror.URL + currentlyDownloadedFile.GetFilePathWithCompression().Replace('\\', '/')),
+                            downloadDirectory + currentlyDownloadedFile.GetFilePathWithCompression());
                     }
 
                     downloadTask.Wait();

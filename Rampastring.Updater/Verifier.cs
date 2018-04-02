@@ -113,7 +113,7 @@ namespace Rampastring.Updater
                 {
                     try
                     {
-                        CompressionHelper.DecompressFile(downloadDirectory + fileInfo.GetDownloadFileName(),
+                        CompressionHelper.DecompressFile(downloadDirectory + fileInfo.GetFilePathWithCompression(),
                             downloadDirectory + fileInfo.FilePath);
                     }
                     catch (Exception ex) 

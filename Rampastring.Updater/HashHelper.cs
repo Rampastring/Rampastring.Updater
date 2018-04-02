@@ -9,7 +9,7 @@ namespace Rampastring.Updater
     /// <summary>
     /// Provides static functions that can help with parsing hashes.
     /// </summary>
-    static class HashHelper
+    public static class HashHelper
     {
         /// <summary>
         /// Generates a hex-formatted string from an array of bytes.

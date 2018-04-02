@@ -12,6 +12,8 @@ namespace Rampastring.Updater.BuildInfo
     /// </summary>
     public class RemoteFileInfo : IFileInfo
     {
+        public const string COMPRESSED_FILE_EXTENSION = ".lmza";
+
         public RemoteFileInfo() { }
 
         public RemoteFileInfo(string filePath, byte[] uncompressedHash,
@@ -104,12 +106,12 @@ namespace Rampastring.Updater.BuildInfo
         }
 
         /// <summary>
-        /// Returns the name of this file for downloading.
+        /// Returns the path of this file taking potential compression into account.
         /// </summary>
-        public string GetDownloadFileName()
+        public string GetFilePathWithCompression()
         {
             if (Compressed)
-                return FilePath + ".lzma";
+                return FilePath + COMPRESSED_FILE_EXTENSION;
 
             return FilePath;
         }

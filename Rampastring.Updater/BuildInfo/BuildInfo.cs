@@ -13,8 +13,8 @@ namespace Rampastring.Updater.BuildInfo
     /// <typeparam name="T">A type that implements IFileInfo and has a default constructor.</typeparam>
     public abstract class BuildInfo<T> where T : IFileInfo, new()
     {
-        protected const string VERSION_SECTION = "Version";
-        protected const string FILES_SECTION = "Files";
+        private const string VERSION_SECTION = "Version";
+        private const string FILES_SECTION = "Files";
 
         public BuildInfo()
         {
@@ -24,13 +24,18 @@ namespace Rampastring.Updater.BuildInfo
         /// <summary>
         /// Gets information about the product version.
         /// </summary>
-        public ProductVersionInfo ProductVersionInfo { get; protected set; }
+        public ProductVersionInfo ProductVersionInfo { get; set; }
 
         /// <summary>
         /// Gets the list of file information.
         /// </summary>
         public List<T> FileInfos { get; private set; }
 
+
+        public void AddFileInfo(T fileInfo)
+        {
+            FileInfos.Add(fileInfo);
+        }
 
         /// <summary>
         /// Parses build information from an INI file in the specified path.

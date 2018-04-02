@@ -14,6 +14,14 @@ namespace Rampastring.Updater.BuildInfo
         private const string VERSION_NUMBER_STRING = "VersionNumber";
         private const string DISPLAYED_VERSION_STRING = "DisplayString";
 
+        public ProductVersionInfo() { }
+
+        public ProductVersionInfo(int versionNumber, string displayString)
+        {
+            VersionNumber = versionNumber;
+            DisplayString = displayString;
+        }
+
         /// <summary>
         /// The internal version number.
         /// </summary>

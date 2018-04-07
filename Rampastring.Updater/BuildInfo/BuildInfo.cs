@@ -103,6 +103,8 @@ namespace Rampastring.Updater.BuildInfo
             {
                 filesSection.SetStringValue(i.ToString(), FileInfos[i].GetString());
             }
+
+            iniFile.WriteIniFile();
         }
     }
 }

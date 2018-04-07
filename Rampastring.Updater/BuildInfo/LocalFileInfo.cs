@@ -49,10 +49,9 @@ namespace Rampastring.Updater.BuildInfo
             if (parts.Length != 3)
                 throw new ParseException("The input string array has an invalid number of items.");
 
-            LocalFileInfo fInfo = new LocalFileInfo();
-            fInfo.FilePath = parts[0];
-            fInfo.Hash = HashHelper.BytesFromHexString(parts[1]);
-            fInfo.Size = long.Parse(parts[2]);
+            FilePath = parts[0];
+            Hash = HashHelper.BytesFromHexString(parts[1]);
+            Size = long.Parse(parts[2]);
         }
 
         /// <summary>

@@ -45,19 +45,18 @@ namespace Rampastring.Updater.BuildInfo
             if (parts.Length < 4)
                 throw new ParseException("Invalid size for parts: " + parts.Length);
 
-            var fileInfo = new RemoteFileInfo();
-            fileInfo.FilePath = parts[0];
-            fileInfo.UncompressedHash = HashHelper.BytesFromHexString(parts[1]);
-            fileInfo.UncompressedSize = long.Parse(parts[2], CultureInfo.InvariantCulture);
-            bool compressed = int.Parse(parts[3]) > 0;
+            FilePath = parts[0];
+            UncompressedHash = HashHelper.BytesFromHexString(parts[1]);
+            UncompressedSize = long.Parse(parts[2], CultureInfo.InvariantCulture);
+            Compressed = int.Parse(parts[3]) > 0;
 
-            if (compressed)
+            if (Compressed)
             {
                 if (parts.Length != 6)
                     throw new ParseException("Invalid size for parts: " + parts.Length);
 
-                fileInfo.CompressedHash = HashHelper.BytesFromHexString(parts[4]);
-                fileInfo.CompressedSize = long.Parse(parts[5], CultureInfo.InvariantCulture);
+                CompressedHash = HashHelper.BytesFromHexString(parts[4]);
+                CompressedSize = long.Parse(parts[5], CultureInfo.InvariantCulture);
             }
         }
 
@@ -71,19 +70,19 @@ namespace Rampastring.Updater.BuildInfo
             if (Compressed)
             {
                 return String.Join(",",
-                FilePath,
-                HashHelper.BytesToString(UncompressedHash),
-                UncompressedSize.ToString(CultureInfo.InvariantCulture),
-                Convert.ToInt32(Compressed).ToString());
+                    FilePath,
+                    HashHelper.BytesToString(UncompressedHash),
+                    UncompressedSize.ToString(CultureInfo.InvariantCulture),
+                    Convert.ToInt32(Compressed).ToString(),
+                    HashHelper.BytesToString(CompressedHash),
+                    CompressedSize.ToString(CultureInfo.InvariantCulture));
             }
 
             return String.Join(",",
                 FilePath,
                 HashHelper.BytesToString(UncompressedHash),
                 UncompressedSize.ToString(CultureInfo.InvariantCulture),
-                Convert.ToInt32(Compressed).ToString(),
-                HashHelper.BytesToString(CompressedHash),
-                CompressedSize.ToString(CultureInfo.InvariantCulture));
+                Convert.ToInt32(Compressed).ToString());
         }
 
         /// <summary>

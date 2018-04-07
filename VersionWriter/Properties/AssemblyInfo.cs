@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("VersionWriter")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Build generator for Rampastring.Updater")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("VersionWriter")]
-[assembly: AssemblyCopyright("Copyright ©  2018")]
+[assembly: AssemblyProduct("Rampastring.Updater")]
+[assembly: AssemblyCopyright("Copyright © Rami 'Rampastring' Pasanen 2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

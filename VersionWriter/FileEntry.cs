@@ -24,7 +24,7 @@ namespace VersionWriter
             if (parts.Length != 2)
                 throw new ParseException("Failed to parse file entry " + descriptor);
 
-            bool compressed = bool.Parse(parts[1]);
+            bool compressed = Convert.ToBoolean(int.Parse(parts[1]));
             return new FileEntry(parts[0], compressed);
         }
 

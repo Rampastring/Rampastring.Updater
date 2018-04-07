@@ -1,12 +1,9 @@
-﻿using Rampastring.Updater;
-using Rampastring.Updater.BuildInfo;
+﻿using Rampastring.Updater.BuildInfo;
 using Rampastring.Updater.Compression;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace VersionWriter
 {
@@ -17,6 +14,9 @@ namespace VersionWriter
 
         public static void Main(string[] args)
         {
+            Console.WriteLine("VersionWriter for Rampastring.Updater");
+            Console.WriteLine();
+
             foreach (string arg in args)
             {
                 switch (arg.ToUpperInvariant())
@@ -31,6 +31,13 @@ namespace VersionWriter
                             "the internal version.");
                         incrementVersion = false;
                         break;
+                    case "-GENERATECONFIG":
+                        Console.WriteLine("Command-line argument: generate new version " +  
+                            "configuration file including files from the current directory.");
+                        Console.WriteLine();
+                        GenerateVersionConfigFile();
+                        // Exit the program instead of continuing
+                        return;
                     default:
                         Console.WriteLine("Unknown command line argument " + arg);
                         Console.WriteLine("Press ENTER to continue.");
@@ -41,27 +48,55 @@ namespace VersionWriter
 
             try
             {
-                Process();
+                GenerateBuild();
             }
             catch (Exception ex)
             {
+                Console.WriteLine();
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("An error occured while processing the build. Message: " + ex.Message);
+                Console.WriteLine("Stacktrace: " + Environment.NewLine + ex.StackTrace);
             }
 
-            Console.ForegroundColor = ConsoleColor.Gray;
-
             Console.WriteLine();
-            Console.WriteLine("Press ENTER to exit.");
-            Console.ReadLine();
         }
 
-        private static void Process()
+        private static void GenerateVersionConfigFile()
+        {
+            Console.WriteLine("Warning: this will overwrite the current version " +
+                "configuration, including the build version information. Press " +
+                "ENTER to continue.");
+            Console.ReadLine();
+
+            VersionConfig versionConfig = new VersionConfig();
+
+            string[] files = Directory.GetFiles(Environment.CurrentDirectory, "*", SearchOption.AllDirectories);
+
+            foreach (string file in files)
+            {
+                string relativePath = file.Substring(Environment.CurrentDirectory.Length + 1);
+
+                if (relativePath == Process.GetCurrentProcess().MainModule.FileName.Substring(
+                    Environment.CurrentDirectory.Length + 1) ||
+                    relativePath == "Rampastring.Updater.dll" || 
+                    relativePath == VersionConfig.VERSIONCONFIG_INI)
+                    continue;
+
+                Console.WriteLine("Including " + relativePath);
+                versionConfig.FileEntries.Add(new FileEntry(relativePath, false));
+            }
+
+            versionConfig.BuildDirectory = "Updates";
+            versionConfig.DisplayedVersion = "Undefined version";
+            versionConfig.Write();
+
+            Console.WriteLine();
+            Console.WriteLine("Configuration generation finished.");
+        }
+
+        private static void GenerateBuild()
         {
             char dsc = Path.DirectorySeparatorChar;
-
-            Console.WriteLine("VersionWriter for Rampastring.Updater");
-            Console.WriteLine();
 
             Console.WriteLine("Reading configuration...");
             VersionConfig versionConfig = new VersionConfig();
@@ -92,9 +127,6 @@ namespace VersionWriter
                 }
             }
 
-            Console.WriteLine("Cleaning build directory from potential leftover files...");
-            versionConfig.CleanBuildDirectory();
-
             Console.WriteLine("Generating new version files...");
 
             if (incrementVersion)
@@ -104,6 +136,12 @@ namespace VersionWriter
                 versionConfig.GenerateVersionDisplayStringFromCurrentDate();
 
             versionConfig.WriteVersionFiles();
+
+            Console.WriteLine("Cleaning build directory from potential leftover files...");
+            versionConfig.CleanBuildDirectory();
+
+            Console.WriteLine("Refreshing version configuration...");
+            versionConfig.Write();
 
             Console.WriteLine();
 

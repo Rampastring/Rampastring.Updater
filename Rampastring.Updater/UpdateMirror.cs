@@ -20,14 +20,17 @@ namespace Rampastring.Updater
         public string UIName { get; private set; }
         public int Rating { get; set; }
 
-        public static UpdateMirror Parse(string info)
+        public static UpdateMirror FromString(string input)
         {
-            string[] parts = info.Split(',');
+            string[] parts = input.Split(',');
 
-            if (parts.Length < 2)
-                throw new ParseException("Info string needs to have at least 2 parts separated by a colon.");
+            if (parts.Length != 2)
+            {
+                throw new ParseException("Update mirror input string \"" + input +
+                        "\" did not match the expected format of \"URL, UI display string\"");
+            }
 
-            return new UpdateMirror(parts[0], parts[1]);
+            return new UpdateMirror(parts[0], parts[1].Trim());
         }
     }
 }

@@ -126,6 +126,46 @@ namespace Rampastring.Updater
         }
 
         /// <summary>
+        /// Reads update mirrors from an INI file in the specified file system path.
+        /// </summary>
+        /// <param name="filePath">The path to the INI file.</param>
+        public void ParseUpdateMirrors(string filePath)
+        {
+            ParseUpdateMirrors(new IniFile(filePath));
+        }
+
+        /// <summary>
+        /// Reads update mirrors from an INI file.
+        /// </summary>
+        /// <param name="iniFile">The INI file.</param>
+        public void ParseUpdateMirrors(IniFile iniFile)
+        {
+            if (iniFile == null)
+                throw new ArgumentNullException("iniFile");
+
+            ParseUpdateMirrors(iniFile.GetSection("UpdateMirrors"));
+        }
+
+        /// <summary>
+        /// Reads update mirrors from an INI section.
+        /// </summary>
+        /// <param name="section">The INI section.</param>
+        public void ParseUpdateMirrors(IniSection section)
+        {
+            if (section == null)
+                throw new ArgumentNullException("section");
+
+            var keys = section.GetKeys();
+
+            foreach (string key in keys)
+            {
+                string value = section.GetStringValue(key, string.Empty);
+
+                updateMirrors.Add(UpdateMirror.FromString(value));
+            }
+        }
+
+        /// <summary>
         /// Starts an asynchronous check for updates if an update check or update
         /// isn't already in progress.
         /// </summary>

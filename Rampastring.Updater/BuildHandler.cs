@@ -147,6 +147,16 @@ namespace Rampastring.Updater
         }
 
         /// <summary>
+        /// Adds an update mirror to the updater's internal list of update mirrors.
+        /// </summary>
+        /// <param name="url">The address of the update mirror.</param>
+        /// <param name="uiName">The name of the update mirror.</param>
+        public void AddUpdateMirror(string url, string uiName)
+        {
+            updateMirrors.Add(new UpdateMirror(url, uiName));
+        }
+
+        /// <summary>
         /// Reads update mirrors from an INI section.
         /// </summary>
         /// <param name="section">The INI section.</param>

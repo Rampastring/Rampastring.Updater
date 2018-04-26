@@ -115,6 +115,12 @@ namespace Rampastring.Updater
 
                     fileIndex = fileIndexesToDownload[fileIndexesToDownload.Count - 1];
                     currentlyDownloadedFile = filesToDownload[fileIndex];
+
+                    if (fileIndexErrorCounts[fileIndex] > MAX_ERROR_COUNT)
+                    {
+                        return CleanUpAndReturnResult(UpdateDownloadResultType.FAILED,
+                            "Failed to download file " + currentlyDownloadedFile.FilePath);
+                    }
                 }
 
                 Task downloadTask = null;
@@ -133,9 +139,13 @@ namespace Rampastring.Updater
                         if (cancelled)
                             return CleanUpAndReturnResult(UpdateDownloadResultType.CANCELLED);
 
+                        string fileSavePath = downloadDirectory + currentlyDownloadedFile.GetFilePathWithCompression();
+
+                        Directory.CreateDirectory(Path.GetDirectoryName(fileSavePath));
+
                         downloadTask = webClient.DownloadFileTaskAsync(
                             new Uri(updateMirror.URL + currentlyDownloadedFile.GetFilePathWithCompression().Replace('\\', '/')),
-                            downloadDirectory + currentlyDownloadedFile.GetFilePathWithCompression());
+                            fileSavePath);
                     }
 
                     downloadTask.Wait();
@@ -154,17 +164,13 @@ namespace Rampastring.Updater
                         return CleanUpAndReturnResult(UpdateDownloadResultType.CANCELLED);
 
                     UpdaterLogger.Log("Exception while downloading file " +
-                        currentlyDownloadedFile.FilePath + ": " + ex.InnerException.Message);
+                        currentlyDownloadedFile.FilePath);
 
+                    LogInnerExceptionRecursive(ex);
+                    
                     lock (fileListLocker)
                     {
                         fileIndexErrorCounts[fileIndex]++;
-
-                        if (fileIndexErrorCounts[fileIndex] > MAX_ERROR_COUNT)
-                        {
-                            return CleanUpAndReturnResult(UpdateDownloadResultType.FAILED,
-                                "Failed to download file " + currentlyDownloadedFile.FilePath);
-                        }
                     }
 
                     continue;
@@ -190,6 +196,15 @@ namespace Rampastring.Updater
             }
 
             return CleanUpAndReturnResult(UpdateDownloadResultType.COMPLETED);
+        }
+
+        private void LogInnerExceptionRecursive(Exception ex)
+        {
+            if (ex.InnerException != null)
+            {
+                UpdaterLogger.Log("Message: " + ex.InnerException.Message);
+                LogInnerExceptionRecursive(ex.InnerException);
+            }
         }
 
         /// <summary>

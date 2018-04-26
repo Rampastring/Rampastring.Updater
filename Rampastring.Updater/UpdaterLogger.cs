@@ -39,8 +39,6 @@ namespace Rampastring.Updater
                 {
                     try
                     {
-                        StreamWriter sw = new StreamWriter(logFilePath, true);
-
                         DateTime now = DateTime.Now;
 
                         StringBuilder sb = new StringBuilder();
@@ -48,8 +46,10 @@ namespace Rampastring.Updater
                         sb.Append("    ");
                         sb.Append(info);
 
-                        sw.WriteLine(sb.ToString());
+                        Console.WriteLine(sb.ToString());
 
+                        StreamWriter sw = new StreamWriter(logFilePath, true);
+                        sw.WriteLine(sb.ToString());
                         sw.Close();
                     }
                     catch

@@ -24,7 +24,7 @@ namespace Rampastring.Updater.BuildInfo
         /// <summary>
         /// Gets information about the product version.
         /// </summary>
-        public ProductVersionInfo ProductVersionInfo { get; set; }
+        public ProductVersionInfo ProductVersionInfo { get; set; } = new ProductVersionInfo();
 
         /// <summary>
         /// Gets the list of file information.

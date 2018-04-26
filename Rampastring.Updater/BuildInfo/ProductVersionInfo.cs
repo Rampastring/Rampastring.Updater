@@ -30,7 +30,7 @@ namespace Rampastring.Updater.BuildInfo
         /// <summary>
         /// The version string for the user interface.
         /// </summary>
-        public string DisplayString { get; private set; }
+        public string DisplayString { get; private set; } = string.Empty;
 
         /// <summary>
         /// Parses the product version information from an INI section.

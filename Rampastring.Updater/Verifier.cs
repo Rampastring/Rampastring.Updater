@@ -54,11 +54,10 @@ namespace Rampastring.Updater
             {
                 filesToCheck.Add(remoteFileInfo);
 
-                if (verifierTask == null)
+                if (waitHandle == null)
                 {
                     waitHandle = new EventWaitHandle(true, EventResetMode.AutoReset);
 
-                    verifierTask = new Task(VerifyFiles);
                     verifierTask.Start();
                 }
             }
@@ -140,16 +139,15 @@ namespace Rampastring.Updater
                         UpdaterLogger.Log("File " + fileInfo.FilePath + " passed verification.");
                 }
 
-                lock (locker)
-                {
-                    filesToCheck.RemoveAt(0);
-                }
-
                 bool waitingForWork = false;
 
                 lock (locker)
                 {
+                    filesToCheck.RemoveAt(0);
+
                     waitingForWork = filesToCheck.Count == 0;
+
+                    waitHandle.Reset();
 
                     if (queueReady && waitingForWork)
                     {

@@ -13,7 +13,7 @@ namespace SecondStageUpdater
 {
     public partial class Form1 : Form
     {
-        private const string CONFIGURATION_FILE = "SecondStageUpdaterConfig";
+        private const string CONFIGURATION_FILE = "SecondStageUpdaterConfig.ini";
         private const string INI_SECTION = "SecondStageUpdater";
         private const string USER_INTERACE = "UserInterface";
 

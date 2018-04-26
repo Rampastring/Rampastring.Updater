@@ -70,7 +70,12 @@ namespace Rampastring.Updater
         public BuildHandler(string localBuildPath, string secondStageUpdaterPath)
         {
             localBuildInfo = new LocalBuildInfo();
-            localBuildInfo.BuildPath = localBuildPath;
+            
+            if (!localBuildPath.EndsWith(Path.DirectorySeparatorChar.ToString()))
+                localBuildInfo.BuildPath = localBuildPath + Path.DirectorySeparatorChar;
+            else
+                localBuildInfo.BuildPath = localBuildPath;
+
             SecondStageUpdaterPath = secondStageUpdaterPath;
         }
 
@@ -117,7 +122,15 @@ namespace Rampastring.Updater
         /// </summary>
         public void ReadLocalBuildInfo()
         {
-            localBuildInfo.Parse(localBuildInfo.BuildPath + LOCAL_BUILD_INFO_FILE);
+            try
+            {
+                if (File.Exists(localBuildInfo.BuildPath + LOCAL_BUILD_INFO_FILE))
+                    localBuildInfo.Parse(localBuildInfo.BuildPath + LOCAL_BUILD_INFO_FILE);
+            }
+            catch (ParseException ex)
+            {
+                UpdaterLogger.Log("Failed to parse local build information. Message: " + ex.Message);
+            }
         }
 
         public string GetLocalVersionDisplayString()
@@ -367,8 +380,7 @@ namespace Rampastring.Updater
                     // If a new second-stage updater was downloaded, update it
                     // first before launching it
 
-                    string originalSecondStageUpdaterPath = localBuildInfo.BuildPath +
-                        Path.DirectorySeparatorChar + SecondStageUpdaterPath;
+                    string originalSecondStageUpdaterPath = localBuildInfo.BuildPath + SecondStageUpdaterPath;
 
                     string updatedSecondStageUpdaterPath = localBuildInfo.BuildPath +
                         TEMPORARY_UPDATER_DIRECTORY + Path.DirectorySeparatorChar +
@@ -463,7 +475,7 @@ namespace Rampastring.Updater
                 // Remove the download directory from the file path
                 string subPath = filePath.Substring(downloadDirectory.Length);
 
-                if (filesToDownload.Find(fi => fi.FilePath == subPath) == null)
+                if (filesToDownload.Find(fi => fi.GetFilePathWithCompression() == subPath) == null)
                 {
                     UpdaterLogger.Log("Deleting file " + subPath + " from the download " + 
                         "directory as part of the clean-up process.");

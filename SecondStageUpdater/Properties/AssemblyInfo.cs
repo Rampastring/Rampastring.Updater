@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("SecondStageUpdater")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("Rampastring.Updater")]
+[assembly: AssemblyDescription("Second-stage executable for Rampastring.Updater")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("SecondStageUpdater")]
-[assembly: AssemblyCopyright("Copyright ©  2018")]
+[assembly: AssemblyProduct("Rampastring.Updater")]
+[assembly: AssemblyCopyright("Copyright © Rampastring 2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

@@ -63,7 +63,7 @@ namespace SecondStageUpdater
             }
             catch (DirectoryNotFoundException)
             {
-                Log("Invalid directory specified in SecondStageUpdaterConfig.ini. " + 
+                Log("Invalid BuildPath specified in SecondStageUpdaterConfig.ini. " + 
                     buildPath + TEMPORARY_UPDATER_DIRECTORY + " is not a valid directory.");
                 Log("Update halted.");
                 Log("Please inform about this to the product developers.");

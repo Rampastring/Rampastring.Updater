@@ -21,6 +21,8 @@ namespace Rampastring.Updater
         public const string LOCAL_BUILD_INFO_FILE = "LocalVersion";
         public const string TEMPORARY_UPDATER_DIRECTORY = "Updater";
 
+        private const string SECOND_STAGE_UPDATER_CONFIGURATION_FILE = "SecondStageUpdaterConfig.ini";
+
         public delegate void ProgressDelegate(UpdateProgressState updateState, 
             string statusString, int currentPercent, int totalPercent);
 
@@ -352,8 +354,10 @@ namespace Rampastring.Updater
 
             UpdateMirror updateMirror = updateMirrors[lastUpdateMirrorId];
 
+            char dsc = Path.DirectorySeparatorChar;
+
             string buildPath = localBuildInfo.BuildPath;
-            string downloadDirectory = buildPath + TEMPORARY_UPDATER_DIRECTORY + Path.DirectorySeparatorChar;
+            string downloadDirectory = buildPath + TEMPORARY_UPDATER_DIRECTORY + dsc;
 
             List<RemoteFileInfo> filesToDownload = GatherFilesToDownload(buildPath, downloadDirectory);
 
@@ -383,7 +387,7 @@ namespace Rampastring.Updater
                     string originalSecondStageUpdaterPath = localBuildInfo.BuildPath + SecondStageUpdaterPath;
 
                     string updatedSecondStageUpdaterPath = localBuildInfo.BuildPath +
-                        TEMPORARY_UPDATER_DIRECTORY + Path.DirectorySeparatorChar +
+                        TEMPORARY_UPDATER_DIRECTORY + dsc +
                         SecondStageUpdaterPath;
 
                     if (File.Exists(updatedSecondStageUpdaterPath))
@@ -391,6 +395,24 @@ namespace Rampastring.Updater
                         File.Delete(originalSecondStageUpdaterPath);
                         File.Move(updatedSecondStageUpdaterPath, originalSecondStageUpdaterPath);
                     }
+
+                    // Also update the second-stage updater's config file
+
+                    string originalSecondStageConfigPath = Path.GetDirectoryName(originalSecondStageUpdaterPath)
+                        + dsc + SECOND_STAGE_UPDATER_CONFIGURATION_FILE;
+
+                    string updatedSecondStageConfigPath = Path.GetDirectoryName(updatedSecondStageUpdaterPath)
+                        + dsc + SECOND_STAGE_UPDATER_CONFIGURATION_FILE;
+
+                    if (File.Exists(updatedSecondStageConfigPath))
+                    {
+                        File.Delete(originalSecondStageConfigPath);
+                        File.Move(updatedSecondStageConfigPath, originalSecondStageConfigPath);
+                    }
+
+                    // Generate local build information file
+                    LocalBuildInfo newBuildInfo = LocalBuildInfoFromRemoteBuildInfo();
+                    newBuildInfo.Write(localBuildInfo.BuildPath + TEMPORARY_UPDATER_DIRECTORY + dsc + LOCAL_BUILD_INFO_FILE);
 
                     Process.Start(originalSecondStageUpdaterPath);
 
@@ -402,6 +424,18 @@ namespace Rampastring.Updater
                     UpdateFailed?.Invoke(this, new UpdateFailureEventArgs(result.ErrorDescription));
                     return;
             }
+        }
+
+        private LocalBuildInfo LocalBuildInfoFromRemoteBuildInfo()
+        {
+            var localBuildInfo = new LocalBuildInfo();
+            localBuildInfo.ProductVersionInfo = remoteBuildInfo.ProductVersionInfo;
+            foreach (RemoteFileInfo fileInfo in remoteBuildInfo.FileInfos)
+            {
+                localBuildInfo.AddFileInfo(new LocalFileInfo(fileInfo.FilePath,
+                    fileInfo.UncompressedHash, fileInfo.UncompressedSize));
+            }
+            return localBuildInfo;
         }
 
         private void Downloader_DownloadProgress(object sender, DownloadProgressEventArgs e)

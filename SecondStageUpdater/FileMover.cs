@@ -57,7 +57,18 @@ namespace SecondStageUpdater
 
         private void InternalStart()
         {
-            filesToMove = Directory.GetFiles(buildPath + TEMPORARY_UPDATER_DIRECTORY);
+            try
+            {
+                filesToMove = Directory.GetFiles(buildPath + TEMPORARY_UPDATER_DIRECTORY);
+            }
+            catch (DirectoryNotFoundException)
+            {
+                Log("Invalid directory specified in SecondStageUpdaterConfig.ini. " + 
+                    buildPath + TEMPORARY_UPDATER_DIRECTORY + " is not a valid directory.");
+                Log("Update halted.");
+                Log("Please inform about this to the product developers.");
+                return;
+            }
 
             Log("Second-Stage Updater");
             Log("Written by Rampastring");
@@ -74,7 +85,23 @@ namespace SecondStageUpdater
             securitySettings.AddAccessRule(allowEveryoneRule);
 
             mutex = new Mutex(false, mutexId, out bool createdNew, securitySettings);
-            mutex.WaitOne();
+            while (true)
+            {
+                try
+                {
+                    bool hasHandle = mutex.WaitOne(int.MaxValue, false);
+                    if (hasHandle)
+                        break;
+
+                    continue;
+                }
+                catch (AbandonedMutexException)
+                {
+                    break;
+                }
+            }
+
+            MoveFiles();
         }
 
         private void MoveFiles()
@@ -100,7 +127,7 @@ namespace SecondStageUpdater
                 }
                 catch (UnauthorizedAccessException)
                 {
-                    Log("Access denied when updating file!");
+                    Log("Access denied when updating file " + targetFile);
                     LogErrorInstructions();
                     waitHandle.WaitOne();
                     continue;

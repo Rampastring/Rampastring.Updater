@@ -37,6 +37,7 @@
             this.listBox1.BackColor = System.Drawing.Color.Black;
             this.listBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.listBox1.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.listBox1.ForeColor = System.Drawing.Color.LimeGreen;
             this.listBox1.FormattingEnabled = true;
             this.listBox1.Location = new System.Drawing.Point(0, 112);
             this.listBox1.Name = "listBox1";

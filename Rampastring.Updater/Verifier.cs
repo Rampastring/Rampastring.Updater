@@ -86,8 +86,11 @@ namespace Rampastring.Updater
         {
             stopped = true;
 
-            if (waitHandle != null)
-                waitHandle.Set();
+            lock (locker)
+            {
+                if (waitHandle != null)
+                    waitHandle.Set();
+            }
         }
 
         private void VerifyFiles()
@@ -166,7 +169,11 @@ namespace Rampastring.Updater
                     waitHandle.WaitOne();
             }
 
-            waitHandle.Dispose();
+            lock (locker)
+            {
+                waitHandle.Dispose();
+                waitHandle = null;
+            }
 
             // We could also dispose of verifierTask, but it sounds like we don't need to bother
             // https://blogs.msdn.microsoft.com/pfxteam/2012/03/25/do-i-need-to-dispose-of-tasks/

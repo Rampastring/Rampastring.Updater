@@ -61,7 +61,7 @@ namespace Rampastring.Updater.Compression
                     decoder.SetDecoderProperties(properties);
 
                     decoder.Code(inputStream, outputStream,
-                        inputStream.Length, outputStream.Length, null);
+                        inputStream.Length, fileLength, null);
                 }
             }
         }

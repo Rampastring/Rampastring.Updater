@@ -151,7 +151,8 @@ namespace VersionWriter
                         f => f.FilePath == file.FilePath);
 
                     if (existingFileInfo == null || 
-                        existingFileInfo.UncompressedHash != HashHelper.ComputeHashForFile(originalFilePath))
+                        !HashHelper.ByteArraysMatch(existingFileInfo.UncompressedHash, 
+                        HashHelper.ComputeHashForFile(originalFilePath)))
                     {
                         outdatedList.Add(file);
                     }
@@ -161,8 +162,8 @@ namespace VersionWriter
                     // For uncompressed files we can just compare its hash
                     // to the original file's hash directly
 
-                    if (HashHelper.ComputeHashForFile(filePath) != 
-                        HashHelper.ComputeHashForFile(originalFilePath))
+                    if (!HashHelper.ByteArraysMatch(HashHelper.ComputeHashForFile(filePath),
+                        HashHelper.ComputeHashForFile(originalFilePath)))
                     {
                         outdatedList.Add(file);
                     }

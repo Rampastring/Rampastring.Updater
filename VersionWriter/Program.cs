@@ -58,7 +58,8 @@ namespace VersionWriter
                 Console.WriteLine("Stacktrace: " + Environment.NewLine + ex.StackTrace);
             }
 
-            Console.WriteLine();
+            Console.WriteLine("Press ENTER to exit.");
+            Console.ReadLine();
         }
 
         private static void GenerateVersionConfigFile()

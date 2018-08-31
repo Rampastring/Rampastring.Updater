@@ -59,14 +59,14 @@ namespace SecondStageUpdater
         {
             try
             {
-                filesToMove = Directory.GetFiles(buildPath + TEMPORARY_UPDATER_DIRECTORY);
+                filesToMove = Directory.GetFiles(buildPath + TEMPORARY_UPDATER_DIRECTORY, "*", SearchOption.AllDirectories);
             }
             catch (DirectoryNotFoundException)
             {
                 Log("Invalid BuildPath specified in SecondStageUpdaterConfig.ini. " + 
                     buildPath + TEMPORARY_UPDATER_DIRECTORY + " is not a valid directory.");
                 Log("Update halted.");
-                Log("Please inform about this to the product developers.");
+                Log("Please contact the product developers for support.");
                 return;
             }
 

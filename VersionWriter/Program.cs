@@ -12,6 +12,9 @@ namespace VersionWriter
         private static bool incrementVersion = true;
         private static bool generateVersionFromDate = false;
 
+        private const string EXE_NAME = "VersionWriter";
+        private const string BUILD_DIRECTORY = "Updates";
+
         public static void Main(string[] args)
         {
             Console.WriteLine("VersionWriter for Rampastring.Updater");
@@ -77,6 +80,12 @@ namespace VersionWriter
             {
                 string relativePath = file.Substring(Environment.CurrentDirectory.Length + 1);
 
+                if (relativePath.StartsWith(BUILD_DIRECTORY))
+                    continue;
+
+                if (relativePath == EXE_NAME + ".pdb")
+                    continue;
+
                 if (relativePath == Process.GetCurrentProcess().MainModule.FileName.Substring(
                     Environment.CurrentDirectory.Length + 1) ||
                     relativePath == "Rampastring.Updater.dll" || 
@@ -87,7 +96,7 @@ namespace VersionWriter
                 versionConfig.FileEntries.Add(new FileEntry(relativePath, false));
             }
 
-            versionConfig.BuildDirectory = "Updates";
+            versionConfig.BuildDirectory = BUILD_DIRECTORY;
             versionConfig.DisplayedVersion = "Undefined version";
             versionConfig.Write();
 

@@ -122,13 +122,19 @@ namespace VersionWriter
                 string filePath = Environment.CurrentDirectory + dsc + versionConfig.BuildDirectory + dsc + fileEntry.FilePath;
                 string originalFilePath = Environment.CurrentDirectory + dsc + fileEntry.FilePath;
 
+                if (!File.Exists(originalFilePath))
+                {
+                    Console.WriteLine($"Warning: file {fileEntry.FilePath} included in version configuration does not exist. Press ENTER to continue.");
+                    Console.ReadLine();
+                    continue;
+                }
+
                 Directory.CreateDirectory(Path.GetDirectoryName(filePath));
 
                 if (!fileEntry.Compressed)
                 {
                     Console.WriteLine("Copying " + fileEntry.FilePath);
-                    File.Copy(originalFilePath,
-                        filePath, true);
+                    File.Copy(originalFilePath, filePath, true);
                 }
                 else
                 {

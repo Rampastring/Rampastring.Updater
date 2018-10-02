@@ -41,6 +41,12 @@ namespace VersionWriter
                         GenerateVersionConfigFile();
                         // Exit the program instead of continuing
                         return;
+                    case "-PURGE":
+                        Console.WriteLine("Command-line argument: purge non-existent files from version configuration.");
+                        Console.WriteLine();
+                        PurgeFileList();
+                        // Exit the program instead of continuing
+                        return;
                     default:
                         Console.WriteLine("Unknown command line argument " + arg);
                         Console.WriteLine("Press ENTER to continue.");
@@ -168,6 +174,31 @@ namespace VersionWriter
             {
                 Console.WriteLine(fileEntry.FilePath);
             }
+        }
+
+        private static void PurgeFileList()
+        {
+            Console.WriteLine("Reading configuration...");
+            VersionConfig versionConfig = new VersionConfig();
+            versionConfig.Parse();
+
+            Console.WriteLine("Purging non-existent files...");
+
+            for (int i = 0; i < versionConfig.FileEntries.Count; i++)
+            {
+                FileEntry entry = versionConfig.FileEntries[i];
+                if (!File.Exists(Environment.CurrentDirectory + Path.DirectorySeparatorChar + entry.FilePath))
+                {
+                    Console.WriteLine($"Removing non-existent file {entry.FilePath}");
+                    versionConfig.FileEntries.RemoveAt(i);
+                    i--;
+                }
+            }
+
+            versionConfig.Write();
+
+            Console.WriteLine();
+            Console.WriteLine("Configuration purging finished.");
         }
     }
 }

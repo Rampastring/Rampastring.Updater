@@ -37,12 +37,15 @@
             this.listBox1.BackColor = System.Drawing.Color.Black;
             this.listBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.listBox1.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.listBox1.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawVariable;
             this.listBox1.ForeColor = System.Drawing.Color.LimeGreen;
             this.listBox1.FormattingEnabled = true;
             this.listBox1.Location = new System.Drawing.Point(0, 112);
             this.listBox1.Name = "listBox1";
             this.listBox1.Size = new System.Drawing.Size(584, 249);
             this.listBox1.TabIndex = 0;
+            this.listBox1.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.listBox1_DrawItem);
+            this.listBox1.MeasureItem += new System.Windows.Forms.MeasureItemEventHandler(this.listBox1_MeasureItem);
             this.listBox1.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.GenericKeyPress);
             // 
             // lblDescription

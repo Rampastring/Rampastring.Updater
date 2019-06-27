@@ -46,7 +46,10 @@ namespace SecondStageUpdater
 
             buildPath = basePath + configIni.GetStringValue(INI_SECTION, "BuildPath", string.Empty);
             targetExecutable = configIni.GetStringValue(INI_SECTION, "ProductExecutable", string.Empty);
+            ProcessCheckMode checkMode = (ProcessCheckMode)Enum.Parse(typeof(ProcessCheckMode), 
+                configIni.GetStringValue(INI_SECTION, "WaitMode", "Mutex"), true);
             string appGuid = configIni.GetStringValue(INI_SECTION, "TargetAppGuid", string.Empty);
+            string processName = configIni.GetStringValue(INI_SECTION, "TargetProcessName", string.Empty);
 
             try
             {
@@ -88,7 +91,7 @@ namespace SecondStageUpdater
                 listBox1.Items.Add("Parsing user interface information failed: " + ex.Message);
             }
 
-            fileMover = new FileMover(buildPath, appGuid);
+            fileMover = new FileMover(buildPath, checkMode, appGuid, processName);
             fileMover.LogEntry += FileMover_LogEntry;
             fileMover.FilesMoved += FileMover_FilesMoved;
         }
@@ -148,14 +151,23 @@ namespace SecondStageUpdater
 
         private void listBox1_MeasureItem(object sender, MeasureItemEventArgs e)
         {
-            e.ItemHeight = (int)e.Graphics.MeasureString(listBox1.Items[e.Index].ToString(), listBox1.Font, listBox1.Width).Height;
+            if (e.Index > -1 && e.Index < listBox1.Items.Count)
+            {
+                e.ItemHeight = (int)e.Graphics.MeasureString(listBox1.Items[e.Index].ToString(),
+                    listBox1.Font, listBox1.Width).Height;
+            }
         }
 
         private void listBox1_DrawItem(object sender, DrawItemEventArgs e)
         {
             e.DrawBackground();
-            e.DrawFocusRectangle();
-            e.Graphics.DrawString(listBox1.Items[e.Index].ToString(), e.Font, new SolidBrush(e.ForeColor), e.Bounds);
+
+            if (e.Index > -1 && e.Index < listBox1.Items.Count)
+            {
+                e.DrawFocusRectangle();
+                e.Graphics.DrawString(listBox1.Items[e.Index].ToString(),
+                    e.Font, new SolidBrush(e.ForeColor), e.Bounds);
+            }
         }
     }
 }

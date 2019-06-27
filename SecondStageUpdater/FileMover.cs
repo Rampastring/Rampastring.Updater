@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.AccessControl;
@@ -9,6 +10,12 @@ using System.Threading;
 
 namespace SecondStageUpdater
 {
+    enum ProcessCheckMode
+    {
+        Mutex,
+        ProcessName
+    }
+
     /// <summary>
     /// Moves files from the temporary updater directory to the build directory.
     /// </summary>
@@ -23,12 +30,20 @@ namespace SecondStageUpdater
         /// Creates a new file mover.
         /// </summary>
         /// <param name="buildPath">The path of the local build.</param>
+        /// <param name="checkMode">Specifies whether the file mover uses a mutex GUID
+        /// or checks for the existence of a process when waiting for the main 
+        /// application to exit before moving files.</param>
         /// <param name="appGuid">The GUID of the main application. The file mover 
-        /// uses it to wait for the application to exit before moving files.</param>
-        public FileMover(string buildPath, string appGuid)
+        /// can use it to wait for the application to exit before moving files.</param>
+        /// <param name="processName">The name of the main application's process.
+        /// The file mover can use it to wait for the application to exit before moving files.</param>
+        public FileMover(string buildPath, ProcessCheckMode checkMode, 
+            string appGuid, string processName)
         {
             this.buildPath = buildPath;
+            this.processCheckMode = checkMode;
             this.appGuid = appGuid;
+            this.processNameToCheck = processName;
         }
 
         private string buildPath;
@@ -42,6 +57,9 @@ namespace SecondStageUpdater
         private int fileId = 0;
 
         private EventWaitHandle waitHandle;
+
+        private ProcessCheckMode processCheckMode;
+        private string processNameToCheck;
 
         private volatile bool aborted = false;
 
@@ -77,29 +95,50 @@ namespace SecondStageUpdater
 
             Log("Waiting for the main application to exit.");
 
-            string mutexId = string.Format("Global\\{{{0}}}", appGuid);
 
-            var allowEveryoneRule = new MutexAccessRule(new SecurityIdentifier(WellKnownSidType.WorldSid, null),
-                MutexRights.FullControl, AccessControlType.Allow);
-            var securitySettings = new MutexSecurity();
-            securitySettings.AddAccessRule(allowEveryoneRule);
-
-            mutex = new Mutex(false, mutexId, out bool createdNew, securitySettings);
-            while (true)
+            if (processCheckMode == ProcessCheckMode.Mutex)
             {
-                try
-                {
-                    bool hasHandle = mutex.WaitOne(int.MaxValue, false);
-                    if (hasHandle)
-                        break;
+                string mutexId = string.Format("Global\\{{{0}}}", appGuid);
 
-                    continue;
-                }
-                catch (AbandonedMutexException)
+                var allowEveryoneRule = new MutexAccessRule(new SecurityIdentifier(WellKnownSidType.WorldSid, null),
+                    MutexRights.FullControl, AccessControlType.Allow);
+                var securitySettings = new MutexSecurity();
+                securitySettings.AddAccessRule(allowEveryoneRule);
+
+                mutex = new Mutex(false, mutexId, out bool createdNew, securitySettings);
+                while (true)
                 {
-                    break;
+                    try
+                    {
+                        bool hasHandle = mutex.WaitOne(int.MaxValue, false);
+                        if (hasHandle)
+                            break;
+
+                        continue;
+                    }
+                    catch (AbandonedMutexException)
+                    {
+                        break;
+                    }
                 }
             }
+            else if (processCheckMode == ProcessCheckMode.ProcessName)
+            {
+                while (true)
+                {
+                    Process[] processes = Process.GetProcessesByName(processNameToCheck);
+
+                    if (processes.Length == 0)
+                        break;
+
+                    foreach (Process process in processes)
+                        process.Dispose();
+
+                    Thread.Sleep(1000);
+                }
+            }
+
+            Thread.Sleep(3000);
 
             MoveFiles();
         }

@@ -160,7 +160,7 @@ namespace SecondStageUpdater
 
                 try
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(sourceFile));
+                    Directory.CreateDirectory(Path.GetDirectoryName(targetFile));
 
                     File.Copy(sourceFile, targetFile, true);
                 }

@@ -2,6 +2,7 @@
 using Rampastring.Updater.Compression;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -117,6 +118,7 @@ namespace Rampastring.Updater
                     {
                         CompressionHelper.DecompressFile(downloadDirectory + fileInfo.GetFilePathWithCompression(),
                             downloadDirectory + fileInfo.FilePath);
+                        File.Delete(downloadDirectory + fileInfo.GetFilePathWithCompression());
                     }
                     catch (Exception ex) 
                     {

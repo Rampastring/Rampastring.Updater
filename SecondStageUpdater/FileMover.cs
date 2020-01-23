@@ -50,7 +50,7 @@ namespace SecondStageUpdater
 
         private string appGuid;
 
-        private string[] filesToMove;
+        private List<string> filesToMove;
 
         private Mutex mutex;
 
@@ -62,6 +62,8 @@ namespace SecondStageUpdater
         private string processNameToCheck;
 
         private volatile bool aborted = false;
+
+        private int version = 0;
 
         /// <summary>
         /// Starts moving files asynchronously.
@@ -77,7 +79,12 @@ namespace SecondStageUpdater
         {
             try
             {
-                filesToMove = Directory.GetFiles(buildPath + TEMPORARY_UPDATER_DIRECTORY, "*", SearchOption.AllDirectories);
+                filesToMove = Directory.GetFiles(buildPath + TEMPORARY_UPDATER_DIRECTORY, "*", SearchOption.AllDirectories).ToList();
+                int migrationsIndex = filesToMove.FindIndex(f => Path.GetFileName(f) == Migrations.FileName);
+                if (migrationsIndex > -1)
+                    filesToMove.RemoveAt(migrationsIndex);
+
+                version = new IniFile(buildPath + TEMPORARY_UPDATER_DIRECTORY + Path.DirectorySeparatorChar + "LocalVersion").GetIntValue("Version", "VersionNumber", version);
             }
             catch (DirectoryNotFoundException)
             {
@@ -147,7 +154,7 @@ namespace SecondStageUpdater
         {
             // This loop is executed until all files have been moved, or the user
             // has aborted the program.
-            while (fileId < filesToMove.Length)
+            while (fileId < filesToMove.Count)
             {
                 if (aborted)
                     break;
@@ -182,7 +189,23 @@ namespace SecondStageUpdater
                 fileId++;
             }
 
-            Log("Moving files finished.");
+            Log("Moving files finished. Running migrations next.");
+
+            var migrations = new Migrations();
+            migrations.LogEntry += (s, e) => Log(e.Message);
+            migrations.ReadMigrations(buildPath, buildPath + TEMPORARY_UPDATER_DIRECTORY);
+            migrations.PerformMigrations(version);
+
+            Log("Deleting temporary update files.");
+
+            try
+            {
+                Directory.Delete(buildPath + TEMPORARY_UPDATER_DIRECTORY, true);
+            }
+            catch (IOException ex)
+            {
+                Log("I/O error when deleting update files! Message: " + ex.Message);
+            }
 
             // If we reach this point it means we're done with moving the files,
             // so release the mutex
@@ -223,15 +246,5 @@ namespace SecondStageUpdater
         {
             LogEntry?.Invoke(this, new LogEventArgs(message));
         }
-    }
-
-    class LogEventArgs : EventArgs
-    {
-        public LogEventArgs(string message)
-        {
-            Message = message;
-        }
-
-        public string Message { get; private set; }
     }
 }

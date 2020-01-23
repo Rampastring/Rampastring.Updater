@@ -103,6 +103,7 @@ namespace SecondStageUpdater
 
         private void Exit()
         {
+            listBox1.Items.Add("Launching " + buildPath + targetExecutable);
             Process.Start(buildPath + targetExecutable);
             FormClosing -= Form1_FormClosing;
             Close();

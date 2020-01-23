@@ -738,6 +738,16 @@ namespace SecondStageUpdater
         {
             return Conversions.BooleanFromString(GetStringValue(key, String.Empty), defaultValue);
         }
+
+        /// <summary>
+        /// Checks if the specified INI key exists in this section.
+        /// </summary>
+        /// <param name="key">The INI key.</param>
+        /// <returns>True if the key exists in this section, otherwise false.</returns>
+        public bool KeyExists(string key)
+        {
+            return Keys.FindIndex(k => k.Key == key) > -1;
+        }
     }
 
     public static class Conversions

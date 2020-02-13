@@ -20,8 +20,6 @@ namespace SecondStageUpdater
         {
             this.buildPath = buildPath;
 
-            
-
             if (!File.Exists(updaterDirectory + FileName))
                 return;
 

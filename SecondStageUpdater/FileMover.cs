@@ -193,7 +193,7 @@ namespace SecondStageUpdater
 
             var migrations = new Migrations();
             migrations.LogEntry += (s, e) => Log(e.Message);
-            migrations.ReadMigrations(buildPath, buildPath + TEMPORARY_UPDATER_DIRECTORY);
+            migrations.ReadMigrations(buildPath, buildPath + TEMPORARY_UPDATER_DIRECTORY + Path.DirectorySeparatorChar);
             migrations.PerformMigrations(version);
 
             Log("Deleting temporary update files.");
@@ -207,10 +207,13 @@ namespace SecondStageUpdater
                 Log("I/O error when deleting update files! Message: " + ex.Message);
             }
 
-            // If we reach this point it means we're done with moving the files,
-            // so release the mutex
-            mutex.ReleaseMutex();
-            mutex.Dispose();
+            if (processCheckMode == ProcessCheckMode.Mutex)
+            {
+                // If we reach this point it means we're done with moving the files,
+                // so release the mutex
+                mutex.ReleaseMutex();
+                mutex.Dispose();
+            }
 
             Directory.Delete(buildPath + TEMPORARY_UPDATER_DIRECTORY, true);
 

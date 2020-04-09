@@ -47,6 +47,17 @@ namespace VersionWriter
                         PurgeFileList();
                         // Exit the program instead of continuing
                         return;
+                    case "-HELP":
+                    case "-?":
+                    case "?":
+                    case "HELP":
+                        Console.WriteLine("Default behaviour (no command-line arg): increment version and generate new build files");
+                        Console.WriteLine("Possible arguments:");
+                        Console.WriteLine("-VERSIONFROMDATE: Generate new version display string based on current system date and time");
+                        Console.WriteLine("-NOINCREMENT: Don't increment internal version");
+                        Console.WriteLine("-GENERATECONFIG: Generate new configuration file including files from the current directory");
+                        Console.WriteLine("-PURGE: Purge non-existent files from configuration");
+                        return;
                     default:
                         Console.WriteLine("Unknown command line argument " + arg);
                         Console.WriteLine("Press ENTER to continue.");

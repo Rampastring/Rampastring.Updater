@@ -55,6 +55,14 @@ namespace SecondStageUpdater
             {
                 Text = configIni.GetStringValue(USER_INTERACE, "WindowTitle", string.Empty);
 
+                string foreColorString = configIni.GetStringValue(USER_INTERACE, "ForeColor", string.Empty);
+                if (!string.IsNullOrEmpty(foreColorString))
+                {
+                    int[] parts = Array.ConvertAll(foreColorString.Split(','), int.Parse);
+                    ForeColor = Color.FromArgb(parts[0], parts[1], parts[2]);
+                    listBox1.ForeColor = ForeColor;
+                }
+
                 string windowSizeString = configIni.GetStringValue(USER_INTERACE, "WindowSize", string.Empty);
                 if (!string.IsNullOrEmpty(windowSizeString))
                 {
@@ -76,10 +84,12 @@ namespace SecondStageUpdater
                 string backgroundImage = configIni.GetStringValue(USER_INTERACE, "BackgroundImage", string.Empty);
                 if (File.Exists(basePath + backgroundImage))
                 {
-                    using (FileStream fs = File.OpenRead(basePath + backgroundImage))
-                    {
-                        BackgroundImage = Image.FromStream(fs);
-                    }
+                    byte[] buffer = File.ReadAllBytes(basePath + backgroundImage);
+                    var memoryStream = new MemoryStream(buffer);
+                    // Image.FromStream needs the memory stream to be open
+                    // when the image is actually drawn, so we don't
+                    // dispose the stream
+                    BackgroundImage = Image.FromStream(memoryStream);
                 }
 
                 string icon = configIni.GetStringValue(USER_INTERACE, "Icon", string.Empty);

@@ -215,8 +215,6 @@ namespace SecondStageUpdater
                 mutex.Dispose();
             }
 
-            Directory.Delete(buildPath + TEMPORARY_UPDATER_DIRECTORY, true);
-
             FilesMoved(this, EventArgs.Empty);
         }
 

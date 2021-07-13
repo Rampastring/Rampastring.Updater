@@ -448,6 +448,9 @@ namespace Rampastring.Updater
         /// <summary>
         /// Gathers a list of files to download for the update.
         /// </summary>
+        /// <param name="buildPath">The full path to the main application directory.</param>
+        /// <param name="downloadDirectory">The full path to the temporary updater directory,
+        /// including a directory separator character.</param>
         private List<RemoteFileInfo> GatherFilesToDownload(string buildPath,
             string downloadDirectory)
         {
@@ -489,6 +492,25 @@ namespace Rampastring.Updater
                     }
                     else
                         UpdaterLogger.Log("File " + remoteFileInfo.FilePath + " is up to date.");
+                }
+            }
+
+            // Go through the files in the download queue and check if a matching local file already exists.
+            // If one exists, then simply copy the local file to the update directory.
+            for (int i = 0; i < filesToDownload.Count; i++)
+            {
+                var remoteFileInfo = filesToDownload[i];
+
+                LocalFileInfo localFileInfo = localBuildInfo.FileInfos.Find(l => HashHelper.ByteArraysMatch(l.Hash, remoteFileInfo.UncompressedHash));
+                if (localFileInfo != null)
+                {
+                    // A matching local file exists, copy it
+
+                    UpdaterLogger.Log("File " + remoteFileInfo.FilePath + " already exists as " + localFileInfo.FilePath + 
+                        ", copying the local file and removing the remote file from the download queue.");
+                    File.Copy(buildPath + localFileInfo.FilePath, downloadDirectory + remoteFileInfo.FilePath);
+                    filesToDownload.RemoveAt(i);
+                    i--;
                 }
             }
 

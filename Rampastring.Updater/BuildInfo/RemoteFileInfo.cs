@@ -70,7 +70,7 @@ namespace Rampastring.Updater.BuildInfo
             if (Compressed)
             {
                 return String.Join(",",
-                    FilePath,
+                    FilePath.Replace('\\', '/'),
                     HashHelper.BytesToString(UncompressedHash),
                     UncompressedSize.ToString(CultureInfo.InvariantCulture),
                     Convert.ToInt32(Compressed).ToString(),
@@ -79,7 +79,7 @@ namespace Rampastring.Updater.BuildInfo
             }
 
             return String.Join(",",
-                FilePath,
+                FilePath.Replace('\\', '/'),
                 HashHelper.BytesToString(UncompressedHash),
                 UncompressedSize.ToString(CultureInfo.InvariantCulture),
                 Convert.ToInt32(Compressed).ToString());

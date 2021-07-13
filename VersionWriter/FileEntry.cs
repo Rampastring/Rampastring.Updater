@@ -33,7 +33,7 @@ namespace VersionWriter
 
         public override string ToString()
         {
-            return FilePath + "," + (Convert.ToInt32(Compressed)).ToString();
+            return FilePath.Replace('\\', '/') + "," + (Convert.ToInt32(Compressed)).ToString();
         }
     }
 }

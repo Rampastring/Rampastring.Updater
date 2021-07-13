@@ -62,7 +62,7 @@ namespace Rampastring.Updater.BuildInfo
         public string GetString()
         {
             return String.Join(",",
-                FilePath,
+                FilePath.Replace('\\', '/'),
                 HashHelper.BytesToString(Hash),
                 Size.ToString(CultureInfo.InvariantCulture));
         }

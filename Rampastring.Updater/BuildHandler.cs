@@ -408,7 +408,30 @@ namespace Rampastring.Updater
                     {
                         File.Delete(originalSecondStageConfigPath);
                         File.Move(updatedSecondStageConfigPath, originalSecondStageConfigPath);
+
+                        // Are there other potential files that the second-stage updater needs?
+                        IniFile secondStageUpdaterIni = new IniFile(originalSecondStageConfigPath);
+
+                        var section = secondStageUpdaterIni.GetSection("RelatedFiles");
+                        if (section != null)
+                        {
+                            foreach (var kvp in section.Keys)
+                            {
+                                if (string.IsNullOrWhiteSpace(kvp.Value))
+                                    continue;
+
+                                string fileName = kvp.Value;
+                                string downloadedFilePath = Path.GetDirectoryName(updatedSecondStageUpdaterPath) + dsc + fileName;
+                                string targetFilePath = Path.GetDirectoryName(originalSecondStageUpdaterPath) + dsc + fileName;
+
+                                if (File.Exists(downloadedFilePath))
+                                {
+                                    File.Move(downloadedFilePath, targetFilePath);
+                                }
+                            }
+                        }
                     }
+
 
                     // Generate local build information file
                     LocalBuildInfo newBuildInfo = LocalBuildInfoFromRemoteBuildInfo();

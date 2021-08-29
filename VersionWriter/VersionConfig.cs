@@ -196,8 +196,8 @@ namespace VersionWriter
                     relativePath == BuildHandler.REMOTE_BUILD_INFO_FILE)
                     continue;
 
-                if (remoteBuildInfo.FileInfos.Find(f => f.GetFilePathWithCompression() ==
-                    relativePath) == null)
+                if (!remoteBuildInfo.FileInfos.Exists(f => f.GetFilePathWithCompression().Replace('\\', '/') ==
+                                                           relativePath.Replace('\\', '/')))
                 {
                     Console.WriteLine("Deleting " + relativePath);
                     File.Delete(path);

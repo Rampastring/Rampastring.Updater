@@ -82,7 +82,7 @@ namespace SecondStageUpdater
                 ParseControlAttributes(configIni, "ListBox", listBox1);
 
                 string backgroundImage = configIni.GetStringValue(USER_INTERACE, "BackgroundImage", string.Empty);
-                if (File.Exists(basePath + backgroundImage))
+                if (!string.IsNullOrWhiteSpace(backgroundImage) && File.Exists(basePath + backgroundImage))
                 {
                     byte[] buffer = File.ReadAllBytes(basePath + backgroundImage);
                     var memoryStream = new MemoryStream(buffer);

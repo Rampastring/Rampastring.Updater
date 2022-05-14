@@ -23,8 +23,10 @@ namespace Rampastring.Updater
         /// <param name="logFilePath">The path of the log file.</param>
         public static void EnableLogging(string logFilePath)
         {
+            UpdaterLogger.logFilePath = logFilePath;
             File.Delete(logFilePath);
             enableLogging = true;
+            Log("Logging enabled");
         }
 
         /// <summary>
@@ -52,8 +54,9 @@ namespace Rampastring.Updater
                         sw.WriteLine(sb.ToString());
                         sw.Close();
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        Console.WriteLine("Failed to write to log: " + ex.Message);
                     }
                 }
             }

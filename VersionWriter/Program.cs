@@ -105,7 +105,6 @@ namespace VersionWriter
 
                 if (relativePath == Process.GetCurrentProcess().MainModule.FileName.Substring(
                     Environment.CurrentDirectory.Length + 1) ||
-                    relativePath == "Rampastring.Updater.dll" || 
                     relativePath == VersionConfig.VERSIONCONFIG_INI ||
                     relativePath == "LocalVersion")
                     continue;

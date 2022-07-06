@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SecondStageUpdater
 {
@@ -21,7 +18,10 @@ namespace SecondStageUpdater
             this.buildPath = buildPath;
 
             if (!File.Exists(updaterDirectory + FileName))
+            {
+                Log(this, new LogEventArgs($"{FileName} not found, no migrations to perform"));
                 return;
+            }
 
             IniFile iniFile = new IniFile(updaterDirectory + FileName);
             foreach (string sectionName in iniFile.GetSections())
@@ -105,6 +105,7 @@ namespace SecondStageUpdater
         private void DeleteFile(string param)
         {
             File.Delete(buildPath + param);
+            LogEntry?.Invoke(this, new LogEventArgs("Deleting file " + param));
         }
     }
 }

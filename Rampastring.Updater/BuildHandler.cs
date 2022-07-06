@@ -384,6 +384,9 @@ namespace Rampastring.Updater
                     // If a new second-stage updater was downloaded, update it
                     // first before launching it
 
+                    UpdaterLogger.Log("Checking whether a new second-stage updater was downloaded...");
+                    UpdaterLogger.Log("Second-stage updater path: " + SecondStageUpdaterPath);
+
                     string originalSecondStageUpdaterPath = localBuildInfo.BuildPath + SecondStageUpdaterPath;
 
                     string updatedSecondStageUpdaterPath = localBuildInfo.BuildPath +
@@ -392,6 +395,9 @@ namespace Rampastring.Updater
 
                     if (File.Exists(updatedSecondStageUpdaterPath))
                     {
+                        UpdaterLogger.Log($"Updated second-stage updater found, applying it. " +
+                            $"Original path: {originalSecondStageUpdaterPath}, updated path: {updatedSecondStageUpdaterPath}");
+                        Directory.CreateDirectory(Path.GetDirectoryName(originalSecondStageUpdaterPath));
                         File.Delete(originalSecondStageUpdaterPath);
                         File.Move(updatedSecondStageUpdaterPath, originalSecondStageUpdaterPath);
                     }
@@ -406,6 +412,10 @@ namespace Rampastring.Updater
 
                     if (File.Exists(updatedSecondStageConfigPath))
                     {
+                        UpdaterLogger.Log($"Updated second-stage updater config found, applying it. " +
+                            $"Original path: {originalSecondStageConfigPath}, updated path: {updatedSecondStageConfigPath}");
+
+                        Directory.CreateDirectory(Path.GetDirectoryName(originalSecondStageConfigPath));
                         File.Delete(originalSecondStageConfigPath);
                         File.Move(updatedSecondStageConfigPath, originalSecondStageConfigPath);
 
@@ -524,13 +534,14 @@ namespace Rampastring.Updater
             {
                 var remoteFileInfo = filesToDownload[i];
 
-                LocalFileInfo localFileInfo = localBuildInfo.FileInfos.Find(l => HashHelper.ByteArraysMatch(l.Hash, remoteFileInfo.UncompressedHash));
+                LocalFileInfo localFileInfo = localBuildInfo.FileInfos.Find(l => HashHelper.ByteArraysMatch(HashHelper.ComputeHashForFile(buildPath + l.FilePath), remoteFileInfo.UncompressedHash));
                 if (localFileInfo != null)
                 {
                     // A matching local file exists, copy it
 
                     UpdaterLogger.Log("File " + remoteFileInfo.FilePath + " already exists as " + localFileInfo.FilePath + 
                         ", copying the local file and removing the remote file from the download queue.");
+                    Directory.CreateDirectory(Path.GetDirectoryName(downloadDirectory + remoteFileInfo.FilePath));
                     File.Copy(buildPath + localFileInfo.FilePath, downloadDirectory + remoteFileInfo.FilePath);
                     filesToDownload.RemoveAt(i);
                     i--;

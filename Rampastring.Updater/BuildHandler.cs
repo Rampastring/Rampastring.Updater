@@ -542,6 +542,7 @@ namespace Rampastring.Updater
                     UpdaterLogger.Log("File " + remoteFileInfo.FilePath + " already exists as " + localFileInfo.FilePath + 
                         ", copying the local file and removing the remote file from the download queue.");
                     Directory.CreateDirectory(Path.GetDirectoryName(downloadDirectory + remoteFileInfo.FilePath));
+                    File.Delete(downloadDirectory + remoteFileInfo.FilePath);
                     File.Copy(buildPath + localFileInfo.FilePath, downloadDirectory + remoteFileInfo.FilePath);
                     filesToDownload.RemoveAt(i);
                     i--;

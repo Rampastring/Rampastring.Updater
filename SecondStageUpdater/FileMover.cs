@@ -160,6 +160,11 @@ namespace SecondStageUpdater
                     break;
 
                 string sourceFile = filesToMove[fileId];
+
+                // Do not copy LZMA files
+                if (Path.GetExtension(sourceFile).Equals(".lzma", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
                 string targetFile = buildPath + filesToMove[fileId].Substring(
                     buildPath.Length + TEMPORARY_UPDATER_DIRECTORY.Length + 1);
 

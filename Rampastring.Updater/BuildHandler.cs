@@ -534,10 +534,13 @@ namespace Rampastring.Updater
             {
                 var remoteFileInfo = filesToDownload[i];
 
-                LocalFileInfo localFileInfo = localBuildInfo.FileInfos.Find(l => HashHelper.ByteArraysMatch(HashHelper.ComputeHashForFile(buildPath + l.FilePath), remoteFileInfo.UncompressedHash));
+                LocalFileInfo localFileInfo = localBuildInfo.FileInfos.Find(l => File.Exists(buildPath + l.FilePath) && HashHelper.ByteArraysMatch(HashHelper.ComputeHashForFile(buildPath + l.FilePath), remoteFileInfo.UncompressedHash));
                 if (localFileInfo != null)
                 {
                     // A matching local file exists, copy it
+
+                    UpdaterLogger.Log("Local hash: " + HashHelper.ComputeHashForFile(buildPath + localFileInfo.FilePath));
+                    UpdaterLogger.Log("Remote hash: " + remoteFileInfo.UncompressedHash);
 
                     UpdaterLogger.Log("File " + remoteFileInfo.FilePath + " already exists as " + localFileInfo.FilePath + 
                         ", copying the local file and removing the remote file from the download queue.");
@@ -586,6 +589,8 @@ namespace Rampastring.Updater
 
         private WebClient CreateWebClient()
         {
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
             return new WebClient()
             {
                 CachePolicy = new RequestCachePolicy(RequestCacheLevel.NoCacheNoStore),

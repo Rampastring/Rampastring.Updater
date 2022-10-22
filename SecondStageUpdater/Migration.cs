@@ -98,14 +98,30 @@ namespace SecondStageUpdater
                     case "DeleteFile":
                         DeleteFile(param);
                         break;
+                    case "DeleteDirectoryIfEmpty":
+                        DeleteDirectoryIfEmpty(param);
+                        break;
                 }
             }
         }
 
         private void DeleteFile(string param)
         {
-            File.Delete(buildPath + param);
             LogEntry?.Invoke(this, new LogEventArgs("Deleting file " + param));
+            File.Delete(buildPath + param);
+        }
+
+        private void DeleteDirectoryIfEmpty(string param)
+        {
+            try
+            {
+                LogEntry?.Invoke(this, new LogEventArgs("Deleting directory if it's empty: " + param));
+                Directory.Delete(buildPath + param, false);
+            }
+            catch (IOException ex)
+            {
+                LogEntry?.Invoke(this, new LogEventArgs("IOException while deleting directory: " + ex.Message));
+            }
         }
     }
 }

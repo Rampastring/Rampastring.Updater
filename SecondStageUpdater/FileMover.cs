@@ -107,12 +107,7 @@ namespace SecondStageUpdater
             {
                 string mutexId = string.Format("Global\\{{{0}}}", appGuid);
 
-                var allowEveryoneRule = new MutexAccessRule(new SecurityIdentifier(WellKnownSidType.WorldSid, null),
-                    MutexRights.FullControl, AccessControlType.Allow);
-                var securitySettings = new MutexSecurity();
-                securitySettings.AddAccessRule(allowEveryoneRule);
-
-                mutex = new Mutex(false, mutexId, out bool createdNew, securitySettings);
+                mutex = new Mutex(false, mutexId, out bool createdNew);
                 while (true)
                 {
                     try

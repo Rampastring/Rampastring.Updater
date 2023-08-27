@@ -10,7 +10,7 @@ using System.Runtime.Versioning;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Rampastring.Updater")]
-[assembly: AssemblyCopyright("Copyright © Rampastring 2018-2022")]
+[assembly: AssemblyCopyright("Copyright © Rampastring 2018-2023")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

@@ -17,9 +17,11 @@ namespace SecondStageUpdater
         {
             this.buildPath = buildPath;
 
-            if (!File.Exists(updaterDirectory + FileName))
+            string path = Path.Combine(updaterDirectory, FileName);
+
+            if (!File.Exists(path))
             {
-                Log(this, new LogEventArgs($"{FileName} not found, no migrations to perform"));
+                Log(this, new LogEventArgs($"{FileName} not found, no migrations to perform. Looked into " + path));
                 return;
             }
 
@@ -108,7 +110,20 @@ namespace SecondStageUpdater
         private void DeleteFile(string param)
         {
             LogEntry?.Invoke(this, new LogEventArgs("Deleting file " + param));
-            File.Delete(buildPath + param);
+
+            try
+            {
+                File.Delete(buildPath + param);
+            }
+            catch (DirectoryNotFoundException)
+            {
+                LogEntry?.Invoke(this, new LogEventArgs("Directory not found, skipping file deletion"));
+                // Nothing to do here
+            }
+            catch (IOException ex)
+            {
+                LogEntry?.Invoke(this, new LogEventArgs("IOException while deleting file: " + ex.Message));
+            }
         }
 
         private void DeleteDirectoryIfEmpty(string param)

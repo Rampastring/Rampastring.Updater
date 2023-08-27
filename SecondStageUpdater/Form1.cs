@@ -17,7 +17,6 @@ namespace SecondStageUpdater
         private const string INI_SECTION = "SecondStageUpdater";
         private const string USER_INTERACE = "UserInterface";
 
-
         public Form1()
         {
             InitializeComponent();
@@ -50,6 +49,8 @@ namespace SecondStageUpdater
                 configIni.GetStringValue(INI_SECTION, "WaitMode", "Mutex"), true);
             string appGuid = configIni.GetStringValue(INI_SECTION, "TargetAppGuid", string.Empty);
             string processName = configIni.GetStringValue(INI_SECTION, "TargetProcessName", string.Empty);
+
+            InitLogger();
 
             try
             {
@@ -106,6 +107,20 @@ namespace SecondStageUpdater
             fileMover.FilesMoved += FileMover_FilesMoved;
         }
 
+        private void InitLogger()
+        {
+            string logFileName = "SecondStageUpdaterLog.txt";
+
+            Logger.Initialize(buildPath, logFileName);
+            Logger.WriteLogFile = true;
+
+            try
+            {
+                File.Delete(Path.Combine(buildPath, logFileName));
+            }
+            catch (IOException) { }
+        }
+
         private void FileMover_FilesMoved(object sender, EventArgs e)
         {
             BeginInvoke(new Action(Exit), null);
@@ -141,6 +156,7 @@ namespace SecondStageUpdater
         private void LogEntry(string message)
         {
             listBox1.Items.Add(message);
+            Logger.Log(message);
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)

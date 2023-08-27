@@ -552,6 +552,15 @@ namespace Rampastring.Updater
                 }
             }
 
+            // Always download Migrations.ini if the remote server has it.
+            const string MigrationsIni = "Migrations.ini";
+            if (!filesToDownload.Exists(f => f.FilePath == MigrationsIni))
+            {
+                int migrationsIndex = remoteBuildInfo.FileInfos.FindIndex(f => f.FilePath == MigrationsIni);
+                if (migrationsIndex > -1)
+                    filesToDownload.Add(remoteBuildInfo.FileInfos[migrationsIndex]);
+            }
+
             return filesToDownload;
         }
 

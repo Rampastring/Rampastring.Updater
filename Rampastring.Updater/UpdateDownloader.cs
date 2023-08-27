@@ -98,6 +98,7 @@ namespace Rampastring.Updater
             fileIndexesToDownload = new List<int>();
             for (int i = 0; i < filesToDownload.Count; i++)
                 fileIndexesToDownload.Add(i);
+
             fileIndexesToDownload.Reverse();
             fileIndexErrorCounts = new int[filesToDownload.Count];
 

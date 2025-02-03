@@ -1,12 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 
 namespace SecondStageUpdater
@@ -15,7 +10,7 @@ namespace SecondStageUpdater
     {
         private const string CONFIGURATION_FILE = "SecondStageUpdaterConfig.ini";
         private const string INI_SECTION = "SecondStageUpdater";
-        private const string USER_INTERACE = "UserInterface";
+        private const string USER_INTERFACE = "UserInterface";
 
         public Form1()
         {
@@ -41,7 +36,7 @@ namespace SecondStageUpdater
 
             string basePath = Application.StartupPath + Path.DirectorySeparatorChar;
 
-            productName = configIni.GetStringValue(USER_INTERACE, "ProductName", string.Empty);
+            productName = configIni.GetStringValue(USER_INTERFACE, "ProductName", string.Empty);
 
             buildPath = basePath + configIni.GetStringValue(INI_SECTION, "BuildPath", string.Empty);
             targetExecutable = configIni.GetStringValue(INI_SECTION, "ProductExecutable", string.Empty);
@@ -54,9 +49,9 @@ namespace SecondStageUpdater
 
             try
             {
-                Text = configIni.GetStringValue(USER_INTERACE, "WindowTitle", string.Empty);
+                Text = configIni.GetStringValue(USER_INTERFACE, "WindowTitle", string.Empty);
 
-                string foreColorString = configIni.GetStringValue(USER_INTERACE, "ForeColor", string.Empty);
+                string foreColorString = configIni.GetStringValue(USER_INTERFACE, "ForeColor", string.Empty);
                 if (!string.IsNullOrEmpty(foreColorString))
                 {
                     int[] parts = Array.ConvertAll(foreColorString.Split(','), int.Parse);
@@ -64,7 +59,7 @@ namespace SecondStageUpdater
                     listBox1.ForeColor = ForeColor;
                 }
 
-                string windowSizeString = configIni.GetStringValue(USER_INTERACE, "WindowSize", string.Empty);
+                string windowSizeString = configIni.GetStringValue(USER_INTERFACE, "WindowSize", string.Empty);
                 if (!string.IsNullOrEmpty(windowSizeString))
                 {
                     int[] parts = Array.ConvertAll(windowSizeString.Split(','), int.Parse);
@@ -73,7 +68,7 @@ namespace SecondStageUpdater
 
                 ParseControlAttributes(configIni, "Label", lblDescription);
 
-                string labelLocationString = configIni.GetStringValue(USER_INTERACE, "LabelLocation", string.Empty);
+                string labelLocationString = configIni.GetStringValue(USER_INTERFACE, "LabelLocation", string.Empty);
                 if (!string.IsNullOrEmpty(labelLocationString))
                 {
                     int[] parts = Array.ConvertAll(labelLocationString.Split(','), int.Parse);
@@ -82,7 +77,7 @@ namespace SecondStageUpdater
 
                 ParseControlAttributes(configIni, "ListBox", listBox1);
 
-                string backgroundImage = configIni.GetStringValue(USER_INTERACE, "BackgroundImage", string.Empty);
+                string backgroundImage = configIni.GetStringValue(USER_INTERFACE, "BackgroundImage", string.Empty);
                 if (!string.IsNullOrWhiteSpace(backgroundImage) && File.Exists(basePath + backgroundImage))
                 {
                     byte[] buffer = File.ReadAllBytes(basePath + backgroundImage);
@@ -93,7 +88,7 @@ namespace SecondStageUpdater
                     BackgroundImage = Image.FromStream(memoryStream);
                 }
 
-                string icon = configIni.GetStringValue(USER_INTERACE, "Icon", string.Empty);
+                string icon = configIni.GetStringValue(USER_INTERFACE, "Icon", string.Empty);
                 if (File.Exists(basePath + icon))
                     Icon = Icon.ExtractAssociatedIcon(basePath + icon);
             }
@@ -136,11 +131,11 @@ namespace SecondStageUpdater
 
         private void ParseControlAttributes(IniFile configIni, string controlKeyName, Control control)
         {
-            control.Text = configIni.GetStringValue(USER_INTERACE, controlKeyName + "Text", lblDescription.Text);
+            control.Text = configIni.GetStringValue(USER_INTERFACE, controlKeyName + "Text", lblDescription.Text);
 
-            control.Font = new Font(configIni.GetStringValue(USER_INTERACE, controlKeyName + "Font", "Arial"),
-                configIni.GetSingleValue(USER_INTERACE, controlKeyName + "FontSize", 10.0f),
-                (FontStyle)Enum.Parse(typeof(FontStyle), configIni.GetStringValue(USER_INTERACE, controlKeyName + "FontStyle", "Regular")));
+            control.Font = new Font(configIni.GetStringValue(USER_INTERFACE, controlKeyName + "Font", "Arial"),
+                configIni.GetSingleValue(USER_INTERFACE, controlKeyName + "FontSize", 10.0f),
+                (FontStyle)Enum.Parse(typeof(FontStyle), configIni.GetStringValue(USER_INTERFACE, controlKeyName + "FontStyle", "Regular")));
         }
 
         private void Form1_Shown(object sender, EventArgs e)

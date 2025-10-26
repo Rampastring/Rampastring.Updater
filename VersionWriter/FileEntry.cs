@@ -1,9 +1,5 @@
 ﻿using Rampastring.Updater;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace VersionWriter
 {
@@ -14,7 +10,7 @@ namespace VersionWriter
     {
         public FileEntry(string filePath, bool compressed)
         {
-            FilePath = filePath;
+            FilePath = filePath.Replace('\\', '/');
             Compressed = compressed;
         }
 

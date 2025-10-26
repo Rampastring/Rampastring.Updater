@@ -2,6 +2,7 @@
 using Rampastring.Updater.BuildInfo;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -35,6 +36,8 @@ namespace VersionWriter
 
         public List<FileEntry> FileEntries = new List<FileEntry>();
 
+        public List<string> IgnoredFiles = new List<string>();
+
         public void Parse()
         {
             if (!File.Exists(GetVersionConfigIniPath()))
@@ -50,13 +53,28 @@ namespace VersionWriter
                 throw new InvalidDataException("No BuildDirectory specified in " + VERSIONCONFIG_INI + "!");
 
             IniSection filesSection = versionConfigIni.GetSection("Files");
-            List<string> keys = filesSection.GetKeys();
 
-            foreach (string key in keys)
+            if (filesSection != null)
             {
-                string entryInfo = filesSection.GetStringValue(key, string.Empty);
-                FileEntry entry = FileEntry.Parse(entryInfo);
-                FileEntries.Add(entry);
+                List<string> keys = filesSection.GetKeys();
+
+                foreach (string key in keys)
+                {
+                    string entryInfo = filesSection.GetStringValue(key, string.Empty);
+                    FileEntry entry = FileEntry.Parse(entryInfo);
+                    FileEntries.Add(entry);
+                }
+            }
+
+            IniSection ignoredFilesSection = versionConfigIni.GetSection("Ignore");
+            if (ignoredFilesSection != null)
+            {
+                List<string> keys = ignoredFilesSection.GetKeys();
+
+                foreach (string key in keys)
+                {
+                    IgnoredFiles.Add(ignoredFilesSection.GetStringValue(key, string.Empty));
+                }
             }
         }
 
@@ -72,6 +90,11 @@ namespace VersionWriter
             versionConfigIni.SetIntValue(VERSION_SECTION, "InternalVersion", InternalVersion);
             versionConfigIni.SetStringValue(VERSION_SECTION, "DisplayedVersion", DisplayedVersion);
             versionConfigIni.SetStringValue(VERSION_SECTION, "BuildDirectory", BuildDirectory);
+
+            for (int i = 0; i < IgnoredFiles.Count; i++)
+            {
+                versionConfigIni.SetStringValue("Ignore", i.ToString(CultureInfo.InvariantCulture), IgnoredFiles[i]);
+            }
 
             for (int i = 0; i < FileEntries.Count; i++)
             {

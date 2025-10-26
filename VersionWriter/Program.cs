@@ -2,8 +2,8 @@
 using Rampastring.Updater.Compression;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace VersionWriter
 {
@@ -41,6 +41,14 @@ namespace VersionWriter
                         GenerateVersionConfigFile();
                         // Exit the program instead of continuing
                         return;
+                    case "-UPDATECONFIG":
+                        Console.WriteLine("Command-line argument: update version " +
+                            "configuration file, updating it to include new files missing from the version configuration " + 
+                            "and removing deleted files from the versionn configuration.");
+                        Console.WriteLine();
+                        UpdateVersionConfigFile();
+                        // Exit the program instead of continuing
+                        return;
                     case "-PURGE":
                         Console.WriteLine("Command-line argument: purge non-existent files from version configuration.");
                         Console.WriteLine();
@@ -56,6 +64,7 @@ namespace VersionWriter
                         Console.WriteLine("-VERSIONFROMDATE: Generate new version display string based on current system date and time");
                         Console.WriteLine("-NOINCREMENT: Don't increment internal version");
                         Console.WriteLine("-GENERATECONFIG: Generate new configuration file including files from the current directory");
+                        Console.WriteLine("-UPDATECONFIG: Update configuration file with new and deleted files");
                         Console.WriteLine("-PURGE: Purge non-existent files from configuration");
                         return;
                     default:
@@ -82,11 +91,26 @@ namespace VersionWriter
             Console.ReadLine();
         }
 
+        private static string[] ignoredFiles = new string[]
+        {
+            "VersionConfig.ini",
+            "VersionWriter.deps.json",
+            "VersionWriter.dll",
+            "VersionWriter.exe",
+            "VersionWriter.pdb",
+            "VersionWriter.runtimeconfig.json",
+            "LocalVersion",
+            "ServerVersion",
+        };
+
         private static void GenerateVersionConfigFile()
         {
             Console.WriteLine("Warning: this will overwrite the current version " +
                 "configuration, including the build version information. Press " +
                 "ENTER to continue.");
+            Console.WriteLine();
+            Console.WriteLine("If you'd like to update the configuration with new files instead " +
+                "of generating a new configuration from scratch, it's recommended to run -UPDATECONFIG instead.");
             Console.ReadLine();
 
             VersionConfig versionConfig = new VersionConfig();
@@ -100,13 +124,7 @@ namespace VersionWriter
                 if (relativePath.StartsWith(BUILD_DIRECTORY))
                     continue;
 
-                if (relativePath == EXE_NAME + ".pdb")
-                    continue;
-
-                if (relativePath == Process.GetCurrentProcess().MainModule.FileName.Substring(
-                    Environment.CurrentDirectory.Length + 1) ||
-                    relativePath == VersionConfig.VERSIONCONFIG_INI ||
-                    relativePath == "LocalVersion")
+                if (Array.Exists(ignoredFiles, relativePath.EndsWith))
                     continue;
 
                 Console.WriteLine("Including " + relativePath);
@@ -119,6 +137,61 @@ namespace VersionWriter
 
             Console.WriteLine();
             Console.WriteLine("Configuration generation finished.");
+        }
+
+        private static void UpdateVersionConfigFile()
+        {
+            Console.WriteLine();
+
+            Console.WriteLine("Reading configuration...");
+            VersionConfig versionConfig = new VersionConfig();
+            versionConfig.Parse();
+
+            Console.WriteLine("Gathering list of new files (files not included in the build)...");
+
+            string[] files = Directory.GetFiles(Environment.CurrentDirectory, "*", SearchOption.AllDirectories);
+
+            foreach (string file in files)
+            {
+                string relativePath = file.Substring(Environment.CurrentDirectory.Length + 1).Replace('\\', '/');
+
+                if (relativePath.StartsWith(BUILD_DIRECTORY))
+                    continue;
+
+                if (Array.Exists(ignoredFiles, relativePath.EndsWith))
+                    continue;
+
+                if (versionConfig.IgnoredFiles.Contains(relativePath))
+                    continue;
+
+                if (versionConfig.FileEntries.Exists(fileEntry => fileEntry.FilePath.Equals(relativePath, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+
+                Console.WriteLine("Including " + relativePath);
+
+                versionConfig.FileEntries.Add(new FileEntry(relativePath, false));
+            }
+
+            versionConfig.FileEntries = versionConfig.FileEntries.OrderBy(fileEntry => fileEntry.FilePath.Count(c => c == '/')).ThenBy(fileEntry => fileEntry.FilePath).ToList();
+
+            Console.WriteLine("Looking for deleted files...");
+
+            for (int i = 0; i < versionConfig.FileEntries.Count; i++)
+            {
+                string path = Path.Combine(Environment.CurrentDirectory, versionConfig.FileEntries[i].FilePath);
+
+                if (!File.Exists(path))
+                {
+                    Console.WriteLine("Removing entry for " + versionConfig.FileEntries[i].FilePath);
+                    versionConfig.FileEntries.RemoveAt(i);
+                    i--;
+                }
+            }
+
+            versionConfig.Write();
+
+            Console.WriteLine();
+            Console.WriteLine("Updating configuration finished.");
         }
 
         private static void GenerateBuild()

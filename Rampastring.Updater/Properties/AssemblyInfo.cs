@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Rampastring.Updater")]
-[assembly: AssemblyCopyright("Copyright © Rami 'Rampastring' Pasanen 2023")]
+[assembly: AssemblyCopyright("Copyright © Rami 'Rampastring' Pasanen 2018-2025")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

@@ -34,16 +34,16 @@
             // 
             // listBox1
             // 
+            listBox1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             listBox1.BackColor = System.Drawing.Color.Black;
             listBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            listBox1.Dock = System.Windows.Forms.DockStyle.Bottom;
             listBox1.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawVariable;
             listBox1.ForeColor = System.Drawing.Color.LimeGreen;
             listBox1.FormattingEnabled = true;
-            listBox1.Location = new System.Drawing.Point(0, 74);
+            listBox1.Location = new System.Drawing.Point(0, 121);
             listBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             listBox1.Name = "listBox1";
-            listBox1.Size = new System.Drawing.Size(584, 287);
+            listBox1.Size = new System.Drawing.Size(731, 300);
             listBox1.TabIndex = 0;
             listBox1.DrawItem += listBox1_DrawItem;
             listBox1.MeasureItem += listBox1_MeasureItem;
@@ -54,19 +54,20 @@
             lblDescription.AutoSize = true;
             lblDescription.BackColor = System.Drawing.Color.Transparent;
             lblDescription.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, 0);
-            lblDescription.Location = new System.Drawing.Point(174, 31);
+            lblDescription.Location = new System.Drawing.Point(248, 53);
             lblDescription.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             lblDescription.Name = "lblDescription";
             lblDescription.Size = new System.Drawing.Size(220, 16);
             lblDescription.TabIndex = 1;
             lblDescription.Text = "Finishing update, please wait...";
+            lblDescription.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // Form1
             // 
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
             AutoValidate = System.Windows.Forms.AutoValidate.EnablePreventFocusChange;
             BackColor = System.Drawing.Color.Black;
-            ClientSize = new System.Drawing.Size(584, 361);
+            ClientSize = new System.Drawing.Size(724, 421);
             Controls.Add(lblDescription);
             Controls.Add(listBox1);
             ForeColor = System.Drawing.Color.LimeGreen;

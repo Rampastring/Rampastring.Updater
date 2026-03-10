@@ -38,7 +38,7 @@ namespace SecondStageUpdater
 
             foreach (Migration migration in migrations)
             {
-                if (migration.MinimumVersion < version && migration.MaximumVersion > version)
+                if (migration.MinimumVersion <= version && migration.MaximumVersion >= version)
                     migration.Perform(buildPath);
             }
 

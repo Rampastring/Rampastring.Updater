@@ -1,4 +1,5 @@
-﻿using Rampastring.Updater.BuildInfo;
+﻿using Rampastring.Updater;
+using Rampastring.Updater.BuildInfo;
 using Rampastring.Updater.Compression;
 using System;
 using System.Collections.Generic;
@@ -117,6 +118,9 @@ namespace VersionWriter
 
             string[] files = Directory.GetFiles(Environment.CurrentDirectory, "*", SearchOption.AllDirectories);
 
+            var component = new Component<VersionWriterFileInfo>("Main", "Main Component", false);
+            versionConfig.Components.Add(component);
+
             foreach (string file in files)
             {
                 string relativePath = file.Substring(Environment.CurrentDirectory.Length + 1);
@@ -128,11 +132,13 @@ namespace VersionWriter
                     continue;
 
                 Console.WriteLine("Including " + relativePath);
-                versionConfig.FileEntries.Add(new FileEntry(relativePath, false));
+                component.AddFileInfo(new VersionWriterFileInfo(relativePath, false));
             }
 
-            versionConfig.BuildDirectory = BUILD_DIRECTORY;
             versionConfig.DisplayedVersion = "Undefined version";
+
+            versionConfig.BuildDirectory = BUILD_DIRECTORY;
+
             versionConfig.Write();
 
             Console.WriteLine();
@@ -147,9 +153,21 @@ namespace VersionWriter
             VersionConfig versionConfig = new VersionConfig();
             versionConfig.Parse();
 
+            var mainComponent = versionConfig.Components.Find(c => c.InternalName.Equals("Main", StringComparison.OrdinalIgnoreCase));
+
+            if (mainComponent == null)
+            {
+                Console.WriteLine("\"Main\" component not found! Unable to update version configuration! Press ENTER to exit.");
+                Console.ReadLine();
+                return;
+            }
+
             Console.WriteLine("Gathering list of new files (files not included in the build)...");
 
             string[] files = Directory.GetFiles(Environment.CurrentDirectory, "*", SearchOption.AllDirectories);
+
+            var existingFileEntries = new List<VersionWriterFileInfo>();
+            versionConfig.Components.ForEach(c => existingFileEntries.AddRange(c.FileInfos));
 
             foreach (string file in files)
             {
@@ -164,27 +182,37 @@ namespace VersionWriter
                 if (versionConfig.IgnoredFiles.Contains(relativePath))
                     continue;
 
-                if (versionConfig.FileEntries.Exists(fileEntry => fileEntry.FilePath.Equals(relativePath, StringComparison.OrdinalIgnoreCase)))
+                if (existingFileEntries.Exists(fileEntry => fileEntry.FilePath.Equals(relativePath, StringComparison.OrdinalIgnoreCase)))
                     continue;
 
                 Console.WriteLine("Including " + relativePath);
 
-                versionConfig.FileEntries.Add(new FileEntry(relativePath, false));
+                mainComponent.AddFileInfo(new VersionWriterFileInfo(relativePath, false));
             }
 
-            versionConfig.FileEntries = versionConfig.FileEntries.OrderBy(fileEntry => fileEntry.FilePath.Count(c => c == '/')).ThenBy(fileEntry => fileEntry.FilePath).ToList();
+            var orderedFileInfos = mainComponent.FileInfos.OrderBy(fileEntry => fileEntry.FilePath.Count(c => c == '/')).ThenBy(fileEntry => fileEntry.FilePath);
+            mainComponent.FileInfos.Clear();
+            mainComponent.FileInfos.AddRange(orderedFileInfos);
 
             Console.WriteLine("Looking for deleted files...");
 
-            for (int i = 0; i < versionConfig.FileEntries.Count; i++)
+            foreach (var component in versionConfig.Components)
             {
-                string path = Path.Combine(Environment.CurrentDirectory, versionConfig.FileEntries[i].FilePath);
-
-                if (!File.Exists(path))
+                for (int i = 0; i < component.FileInfos.Count; i++)
                 {
-                    Console.WriteLine("Removing entry for " + versionConfig.FileEntries[i].FilePath);
-                    versionConfig.FileEntries.RemoveAt(i);
-                    i--;
+                    string path = Path.Combine(Environment.CurrentDirectory, component.FileInfos[i].FilePath);
+
+                    if (!File.Exists(path))
+                    {
+                        Console.WriteLine("Removing entry for " + component.FileInfos[i].FilePath);
+                        component.FileInfos.RemoveAt(i);
+                        i--;
+                    }
+                }
+
+                if (component.FileInfos.Count == 0)
+                {
+                    LogWarning($"Warning: Component {component.InternalName} has 0 files in it.");
                 }
             }
 
@@ -192,6 +220,14 @@ namespace VersionWriter
 
             Console.WriteLine();
             Console.WriteLine("Updating configuration finished.");
+        }
+
+        private static void LogWarning(string str)
+        {
+            var oldColor = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine(str);
+            Console.ForegroundColor = oldColor;
         }
 
         private static void GenerateBuild()
@@ -203,11 +239,11 @@ namespace VersionWriter
             versionConfig.Parse();
 
             Console.WriteLine("Gathering list of outdated files in the build directory...");
-            List<FileEntry> filesToProcess = versionConfig.GetOutdatedFileList();
+            var filesToProcess = versionConfig.GetOutdatedFileList();
 
             Directory.CreateDirectory(Environment.CurrentDirectory + dsc + versionConfig.BuildDirectory);
 
-            foreach (FileEntry fileEntry in filesToProcess)
+            foreach (VersionWriterFileInfo fileEntry in filesToProcess)
             {
                 string filePath = Environment.CurrentDirectory + dsc + versionConfig.BuildDirectory + dsc + fileEntry.FilePath;
                 string originalFilePath = Environment.CurrentDirectory + dsc + fileEntry.FilePath;
@@ -254,7 +290,7 @@ namespace VersionWriter
             Console.WriteLine("List of modified files:");
             Console.ForegroundColor = ConsoleColor.Green;
 
-            foreach (FileEntry fileEntry in filesToProcess)
+            foreach (VersionWriterFileInfo fileEntry in filesToProcess)
             {
                 Console.WriteLine(fileEntry.FilePath);
             }
@@ -268,14 +304,24 @@ namespace VersionWriter
 
             Console.WriteLine("Purging non-existent files...");
 
-            for (int i = 0; i < versionConfig.FileEntries.Count; i++)
+            foreach (var component in versionConfig.Components)
             {
-                FileEntry entry = versionConfig.FileEntries[i];
-                if (!File.Exists(Environment.CurrentDirectory + Path.DirectorySeparatorChar + entry.FilePath))
+                for (int i = 0; i < component.FileInfos.Count; i++)
                 {
-                    Console.WriteLine($"Removing non-existent file {entry.FilePath}");
-                    versionConfig.FileEntries.RemoveAt(i);
-                    i--;
+                    var entry = component.FileInfos[i];
+                    string path = Path.Combine(Environment.CurrentDirectory, entry.FilePath);
+
+                    if (!File.Exists(path))
+                    {
+                        Console.WriteLine($"Removing non-existent file {entry.FilePath} from component {component.InternalName}");
+                        component.FileInfos.RemoveAt(i);
+                        i--;
+                    }
+                }
+
+                if (component.FileInfos.Count == 0)
+                {
+                    LogWarning($"Warning: Component {component.InternalName} has 0 files in it.");
                 }
             }
 

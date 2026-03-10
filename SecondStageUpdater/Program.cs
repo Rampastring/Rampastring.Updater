@@ -14,7 +14,10 @@ namespace SecondStageUpdater
         static void Main()
         {
             Application.EnableVisualStyles();
-            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+            // DpiUnawareGdiScaled is not available on Windows 7
+            Application.SetHighDpiMode(Environment.OSVersion.Version.Major >= 10
+                ? HighDpiMode.DpiUnawareGdiScaled
+                : HighDpiMode.DpiUnaware);
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Form1());
         }

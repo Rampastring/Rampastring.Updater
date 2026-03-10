@@ -308,12 +308,12 @@ namespace Rampastring.Updater
 
             long updateSize = 0;
 
-            LocalBuildInfo lbi = localBuildInfo;
-            RemoteBuildInfo rbi = remoteBuildInfo;
+            var remoteFiles = remoteBuildInfo.GetFiles(localBuildInfo);
+            var localFiles = localBuildInfo.GetFiles(localBuildInfo);
 
-            foreach (var fileInfo in rbi.FileInfos)
+            foreach (var fileInfo in remoteFiles)
             {
-                var localMatch = lbi.FileInfos.Find(localFileInfo => localFileInfo.FilePath == fileInfo.FilePath);
+                var localMatch = localFiles.Find(localFileInfo => localFileInfo.FilePath == fileInfo.FilePath);
 
                 if (localMatch == null || !HashHelper.ByteArraysMatch(localMatch.Hash, fileInfo.UncompressedHash))
                     updateSize += fileInfo.GetDownloadSize();
@@ -463,11 +463,20 @@ namespace Rampastring.Updater
         {
             var localBuildInfo = new LocalBuildInfo();
             localBuildInfo.ProductVersionInfo = remoteBuildInfo.ProductVersionInfo;
-            foreach (RemoteFileInfo fileInfo in remoteBuildInfo.FileInfos)
+
+            foreach (var component in remoteBuildInfo.Components)
             {
-                localBuildInfo.AddFileInfo(new LocalFileInfo(fileInfo.FilePath,
-                    fileInfo.UncompressedHash, fileInfo.UncompressedSize));
+                var localComponent = new Component<LocalFileInfo>(component.InternalName, component.UIName, component.Optional);
+
+                foreach (RemoteFileInfo fileInfo in component.FileInfos)
+                {
+                    localComponent.AddFileInfo(new LocalFileInfo(fileInfo.FilePath,
+                        fileInfo.UncompressedHash, fileInfo.UncompressedSize));
+                }
+
+                localBuildInfo.Components.Add(localComponent);
             }
+
             return localBuildInfo;
         }
 
@@ -492,13 +501,15 @@ namespace Rampastring.Updater
             // This could be multithreaded later on for faster processing,
             // calculating the SHA1 hashes can take a lot of time
 
-            for (int i = 0; i < remoteBuildInfo.FileInfos.Count; i++)
+            var remoteFiles = remoteBuildInfo.GetFiles(localBuildInfo);
+
+            for (int i = 0; i < remoteFiles.Count; i++)
             {
-                var remoteFileInfo = remoteBuildInfo.FileInfos[i];
+                var remoteFileInfo = remoteFiles[i];
 
                 UpdateProgressChanged?.Invoke(this, new UpdateProgressEventArgs(
                     UpdateProgressState.PREPARING, 0,
-                    (int)(i / (double)remoteBuildInfo.FileInfos.Count * 100.0), string.Empty));
+                    (int)(i / (double)remoteFiles.Count * 100.0), "Checking outdated files..."));
 
                 if (!File.Exists(buildPath + remoteFileInfo.FilePath))
                 {
@@ -530,11 +541,14 @@ namespace Rampastring.Updater
 
             // Go through the files in the download queue and check if a matching local file already exists.
             // If one exists, then simply copy the local file to the update directory.
+
+            var localFiles = localBuildInfo.GetFiles(localBuildInfo);
+
             for (int i = 0; i < filesToDownload.Count; i++)
             {
                 var remoteFileInfo = filesToDownload[i];
 
-                LocalFileInfo localFileInfo = localBuildInfo.FileInfos.Find(l => File.Exists(buildPath + l.FilePath) && HashHelper.ByteArraysMatch(HashHelper.ComputeHashForFile(buildPath + l.FilePath), remoteFileInfo.UncompressedHash));
+                LocalFileInfo localFileInfo = localFiles.Find(l => File.Exists(buildPath + l.FilePath) && HashHelper.ByteArraysMatch(HashHelper.ComputeHashForFile(buildPath + l.FilePath), remoteFileInfo.UncompressedHash));
                 if (localFileInfo != null)
                 {
                     // A matching local file exists, copy it
@@ -556,9 +570,9 @@ namespace Rampastring.Updater
             const string MigrationsIni = "Migrations.ini";
             if (!filesToDownload.Exists(f => f.FilePath == MigrationsIni))
             {
-                int migrationsIndex = remoteBuildInfo.FileInfos.FindIndex(f => f.FilePath == MigrationsIni);
+                int migrationsIndex = remoteFiles.FindIndex(f => f.FilePath == MigrationsIni);
                 if (migrationsIndex > -1)
-                    filesToDownload.Add(remoteBuildInfo.FileInfos[migrationsIndex]);
+                    filesToDownload.Add(remoteFiles[migrationsIndex]);
             }
 
             return filesToDownload;

@@ -1,17 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Rampastring.Updater.BuildInfo
 {
+    public interface IComponentInstallationInfoContainer
+    {
+        void MarkComponentAsInstalled(string component);
+        bool IsComponentInstalled<T>(Component<T> component) where T : IFileInfo, new();
+        bool IsComponentInstalled(string componentName);
+    }
+
     /// <summary>
     /// Represents a local product build. Includes product version information 
     /// and file information.
     /// </summary>
-    public class LocalBuildInfo : BuildInfo<LocalFileInfo>
+    public class LocalBuildInfo : BuildInfo<LocalFileInfo>, IComponentInstallationInfoContainer
     {
         public LocalBuildInfo()
         {
@@ -23,6 +27,8 @@ namespace Rampastring.Updater.BuildInfo
         /// </summary>
         public string BuildPath { get; set; }
 
+        public List<string> InstalledComponents { get; } = new List<string>();
+
         /// <summary>
         /// Verifies the files of the local build. Returns a list of files that
         /// have different hashes from specified.
@@ -32,12 +38,34 @@ namespace Rampastring.Updater.BuildInfo
         {
             var differentFiles = new List<LocalFileInfo>();
 
-            FileInfos.ForEach(fi => 
+            foreach (var component in Components)
             {
-                if (!fi.MatchesActualFile(BuildPath)) differentFiles.Add(fi);
-            });
+                if (component.Optional && !IsComponentInstalled(component))
+                    continue;
+
+                foreach (var fileInfo in component.FileInfos)
+                {
+                    if (!fileInfo.MatchesActualFile(BuildPath))
+                        differentFiles.Add(fileInfo);
+                }
+            }
 
             return differentFiles;
+        }
+
+        public void MarkComponentAsInstalled(string component)
+        {
+            InstalledComponents.Add(component);
+        }
+
+        public bool IsComponentInstalled<T>(Component<T> component) where T : IFileInfo, new()
+        {
+            return InstalledComponents.Contains(component.InternalName);
+        }
+
+        public bool IsComponentInstalled(string componentName)
+        {
+            return InstalledComponents.Contains(componentName);
         }
     }
 }

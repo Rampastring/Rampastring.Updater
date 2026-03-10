@@ -34,7 +34,7 @@ namespace VersionWriter
         /// </summary>
         public string BuildDirectory { get; set; }
 
-        public List<FileEntry> FileEntries = new List<FileEntry>();
+        public List<Component<VersionWriterFileInfo>> Components = new List<Component<VersionWriterFileInfo>>();
 
         public List<string> IgnoredFiles = new List<string>();
 
@@ -52,17 +52,44 @@ namespace VersionWriter
             if (string.IsNullOrEmpty(BuildDirectory))
                 throw new InvalidDataException("No BuildDirectory specified in " + VERSIONCONFIG_INI + "!");
 
-            IniSection filesSection = versionConfigIni.GetSection("Files");
+            IniSection componentsSection = versionConfigIni.GetSection("Components");
 
-            if (filesSection != null)
+            if (componentsSection == null)
             {
-                List<string> keys = filesSection.GetKeys();
+                throw new InvalidDataException("No Components section found in " + VERSIONCONFIG_INI + "!");
+            }
 
-                foreach (string key in keys)
+            foreach (var kvp in componentsSection.Keys)
+            {
+                if (string.IsNullOrWhiteSpace(kvp.Value))
+                    throw new InvalidDataException("Component name cannot be empty!");
+
+                var component = new Component<VersionWriterFileInfo>();
+
+                var componentIniSection = versionConfigIni.GetSection(kvp.Value);
+
+                if (componentIniSection == null)
+                    throw new InvalidDataException("No INI section found for component " + kvp.Value + "!");
+
+                component.ReadOptionsFromIniSection(componentIniSection);
+
+                Components.Add(component);
+
+                IniSection filesSection = versionConfigIni.GetSection(component.InternalName + ".Files");
+
+                if (filesSection != null)
                 {
-                    string entryInfo = filesSection.GetStringValue(key, string.Empty);
-                    FileEntry entry = FileEntry.Parse(entryInfo);
-                    FileEntries.Add(entry);
+                    List<string> keys = filesSection.GetKeys();
+
+                    foreach (string key in keys)
+                    {
+                        string entryInfo = filesSection.GetStringValue(key, string.Empty);
+                        string[] parts = entryInfo.Split(',');
+
+                        VersionWriterFileInfo fileInfo = new VersionWriterFileInfo();
+                        fileInfo.Parse(parts);
+                        component.AddFileInfo(fileInfo);
+                    }
                 }
             }
 
@@ -96,9 +123,19 @@ namespace VersionWriter
                 versionConfigIni.SetStringValue("Ignore", i.ToString(CultureInfo.InvariantCulture), IgnoredFiles[i]);
             }
 
-            for (int i = 0; i < FileEntries.Count; i++)
+            for (int i = 0; i < Components.Count; i++)
             {
-                versionConfigIni.SetStringValue("Files", i.ToString(), FileEntries[i].ToString());
+                var component = Components[i];
+
+                versionConfigIni.SetStringValue("Components", i.ToString(CultureInfo.InvariantCulture), component.InternalName);
+
+                var componentOptionsSection = new IniSection(component.InternalName);
+                component.WriteOptionsToIniSection(componentOptionsSection);
+                versionConfigIni.AddSection(componentOptionsSection);
+
+                var componentFilesSection = new IniSection(component.InternalName + ".Files");
+                component.WriteFilesToIniSection(componentFilesSection);
+                versionConfigIni.AddSection(componentFilesSection);
             }
 
             versionConfigIni.WriteIniFile(GetVersionConfigIniPath());
@@ -115,24 +152,23 @@ namespace VersionWriter
             }
         }
 
-        private string GetVersionConfigIniPath()
+        public static string GetVersionConfigIniPath()
         {
-            return Environment.CurrentDirectory +
-                Path.DirectorySeparatorChar + VERSIONCONFIG_INI;
+            return Environment.CurrentDirectory + Path.DirectorySeparatorChar + VERSIONCONFIG_INI;
         }
 
         /// <summary>
         /// Gathers a list of files that do not exist or are outdated in the
         /// build directory.
         /// </summary>
-        public List<FileEntry> GetOutdatedFileList()
+        public List<VersionWriterFileInfo> GetOutdatedFileList()
         {
             string targetDirectory = Environment.CurrentDirectory + 
                 Path.DirectorySeparatorChar + BuildDirectory;
 
             // If the build directory doesn't exist, we need to process all the files
             if (!Directory.Exists(targetDirectory))
-                return new List<FileEntry>(FileEntries);
+                return new List<VersionWriterFileInfo>();
 
             if (targetDirectory[targetDirectory.Length - 1] != Path.DirectorySeparatorChar)
                 targetDirectory = targetDirectory + Path.DirectorySeparatorChar;
@@ -142,9 +178,12 @@ namespace VersionWriter
             if (File.Exists(targetDirectory + BuildHandler.REMOTE_BUILD_INFO_FILE))
                 remoteBuildInfo.Parse(targetDirectory + BuildHandler.REMOTE_BUILD_INFO_FILE);
 
-            List<FileEntry> outdatedList = new List<FileEntry>();
+            var outdatedList = new List<VersionWriterFileInfo>();
 
-            foreach (FileEntry file in FileEntries)
+            var allFiles = new List<VersionWriterFileInfo>();
+            Components.ForEach(c => allFiles.AddRange(c.FileInfos));
+
+            foreach (VersionWriterFileInfo file in allFiles)
             {
                 string filePath = targetDirectory + file.FilePath;
                 string originalFilePath = Environment.CurrentDirectory + Path.DirectorySeparatorChar + file.FilePath;
@@ -170,7 +209,7 @@ namespace VersionWriter
                     // If not (or there is no record of the file in RemoteVersion), we need
                     // to process the file
 
-                    RemoteFileInfo existingFileInfo = remoteBuildInfo.FileInfos.Find(
+                    RemoteFileInfo existingFileInfo = remoteBuildInfo.GetFilesForAllComponents().Find(
                         f => f.FilePath == file.FilePath);
 
                     if (existingFileInfo == null || 
@@ -207,6 +246,7 @@ namespace VersionWriter
             string[] files = Directory.GetFiles(buildDirectory, "*", SearchOption.AllDirectories);
 
             RemoteBuildInfo remoteBuildInfo = new RemoteBuildInfo();
+            var remoteFiles = remoteBuildInfo.GetFilesForAllComponents();
 
             if (File.Exists(buildDirectory + dsc + BuildHandler.REMOTE_BUILD_INFO_FILE))
                 remoteBuildInfo.Parse(buildDirectory + dsc + BuildHandler.REMOTE_BUILD_INFO_FILE);
@@ -217,9 +257,11 @@ namespace VersionWriter
 
                 if (relativePath == BuildHandler.LOCAL_BUILD_INFO_FILE ||
                     relativePath == BuildHandler.REMOTE_BUILD_INFO_FILE)
+                {
                     continue;
+                }
 
-                if (!remoteBuildInfo.FileInfos.Exists(f => f.GetFilePathWithCompression().Replace('\\', '/') ==
+                if (!remoteFiles.Exists(f => f.GetFilePathWithCompression().Replace('\\', '/') ==
                                                            relativePath.Replace('\\', '/')))
                 {
                     Console.WriteLine("Deleting " + relativePath);
@@ -242,28 +284,39 @@ namespace VersionWriter
             string buildPath = Environment.CurrentDirectory +
                 Path.DirectorySeparatorChar + BuildDirectory + Path.DirectorySeparatorChar;
 
-            foreach (FileEntry file in FileEntries)
+            foreach (var component in Components)
             {
-                string originalFilePath = Environment.CurrentDirectory +
-                    Path.DirectorySeparatorChar + file.FilePath;
+                var remoteComponent = new Component<RemoteFileInfo>(component.InternalName, component.UIName, component.Optional);
+                remoteBuildInfo.Components.Add(remoteComponent);
 
-                byte[] hash = HashHelper.ComputeHashForFile(originalFilePath);
-                long size = new FileInfo(originalFilePath).Length;
-                localBuildInfo.AddFileInfo(new LocalFileInfo(file.FilePath, hash, size));
+                var localComponent = new Component<LocalFileInfo>(component.InternalName, component.UIName, component.Optional);
+                localBuildInfo.Components.Add(localComponent);
 
-                RemoteFileInfo remoteFileInfo;
-
-                if (file.Compressed)
+                foreach (VersionWriterFileInfo file in component.FileInfos)
                 {
-                    string compressedFilePath = buildPath + file.FilePath + RemoteFileInfo.COMPRESSED_FILE_EXTENSION;
-                    remoteFileInfo = new RemoteFileInfo(file.FilePath, hash, size, true,
-                        HashHelper.ComputeHashForFile(compressedFilePath),
-                        new FileInfo(compressedFilePath).Length);
-                }
-                else
-                    remoteFileInfo = new RemoteFileInfo(file.FilePath, hash, size, false);
+                    string originalFilePath = Environment.CurrentDirectory +
+                        Path.DirectorySeparatorChar + file.FilePath;
 
-                remoteBuildInfo.AddFileInfo(remoteFileInfo);
+                    byte[] hash = HashHelper.ComputeHashForFile(originalFilePath);
+                    long size = new FileInfo(originalFilePath).Length;
+                    localComponent.AddFileInfo(new LocalFileInfo(file.FilePath, hash, size));
+
+                    RemoteFileInfo remoteFileInfo;
+
+                    if (file.Compressed)
+                    {
+                        string compressedFilePath = buildPath + file.FilePath + RemoteFileInfo.COMPRESSED_FILE_EXTENSION;
+                        remoteFileInfo = new RemoteFileInfo(file.FilePath, hash, size, true,
+                            HashHelper.ComputeHashForFile(compressedFilePath),
+                            new FileInfo(compressedFilePath).Length);
+                    }
+                    else
+                    {
+                        remoteFileInfo = new RemoteFileInfo(file.FilePath, hash, size, false);
+                    }
+
+                    remoteComponent.AddFileInfo(remoteFileInfo);
+                }
             }
 
             localBuildInfo.Write(buildPath + BuildHandler.LOCAL_BUILD_INFO_FILE);

@@ -12,7 +12,7 @@ namespace Rampastring.Updater.BuildInfo
     /// </summary>
     public class RemoteFileInfo : IFileInfo
     {
-        public const string COMPRESSED_FILE_EXTENSION = ".lmza";
+        public const string COMPRESSED_FILE_EXTENSION = ".lzma";
 
         public RemoteFileInfo() { }
 
@@ -69,7 +69,7 @@ namespace Rampastring.Updater.BuildInfo
         {
             if (Compressed)
             {
-                return String.Join(",",
+                return string.Join(",",
                     FilePath.Replace('\\', '/'),
                     HashHelper.BytesToString(UncompressedHash),
                     UncompressedSize.ToString(CultureInfo.InvariantCulture),
@@ -78,7 +78,7 @@ namespace Rampastring.Updater.BuildInfo
                     CompressedSize.ToString(CultureInfo.InvariantCulture));
             }
 
-            return String.Join(",",
+            return string.Join(",",
                 FilePath.Replace('\\', '/'),
                 HashHelper.BytesToString(UncompressedHash),
                 UncompressedSize.ToString(CultureInfo.InvariantCulture),

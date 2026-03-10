@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Rampastring.Updater.BuildInfo
 {
@@ -14,11 +12,11 @@ namespace Rampastring.Updater.BuildInfo
     public abstract class BuildInfo<T> where T : IFileInfo, new()
     {
         private const string VERSION_SECTION = "Version";
+        private const string COMPONENTS_SECTION = "Components";
         private const string FILES_SECTION = "Files";
 
         public BuildInfo()
         {
-            FileInfos = new List<T>();
         }
 
         /// <summary>
@@ -26,15 +24,26 @@ namespace Rampastring.Updater.BuildInfo
         /// </summary>
         public ProductVersionInfo ProductVersionInfo { get; set; } = new ProductVersionInfo();
 
-        /// <summary>
-        /// Gets the list of file information.
-        /// </summary>
-        public List<T> FileInfos { get; private set; }
+        public List<Component<T>> Components { get; private set; }
 
+        public List<T> GetFilesForAllComponents() => GetFiles(null);
 
-        public void AddFileInfo(T fileInfo)
+        public List<T> GetFiles(IComponentInstallationInfoContainer installedComponents)
         {
-            FileInfos.Add(fileInfo);
+            var list = new List<T>();
+
+            foreach (var component in Components)
+            {
+                if (component.Optional && installedComponents != null && 
+                    !installedComponents.IsComponentInstalled(component.InternalName))
+                {
+                    continue;
+                }
+
+                list.AddRange(component.FileInfos);
+            }
+
+            return list;
         }
 
         /// <summary>
@@ -60,24 +69,55 @@ namespace Rampastring.Updater.BuildInfo
             ProductVersionInfo = new ProductVersionInfo();
             ProductVersionInfo.Parse(versionSection);
 
-            var fileKeys = iniFile.GetSectionKeys(FILES_SECTION);
+            var componentsSection = iniFile.GetSection("Components");
 
-            if (fileKeys == null)
-                return;
+            if (componentsSection == null)
+                throw new ParseException("[" + COMPONENTS_SECTION + "] section not found from " + iniFile.FileName);
 
-            foreach (string key in fileKeys)
+            foreach (var kvp in componentsSection.Keys)
             {
-                string[] parts = iniFile.GetStringValue(FILES_SECTION, key, string.Empty).Split(',');
+                string iniName = kvp.Value;
 
-                try
+                var component = CreateComponent(iniFile, iniName);
+
+                var filesSection = iniFile.GetSection(iniName + "." + FILES_SECTION);
+                if (filesSection != null)
+                    component.ReadFilesFromIniSection(filesSection);
+            }
+
+            SanityCheckComponents();
+        }
+
+        private Component<T> CreateComponent(IniFile iniFile, string iniName)
+        {
+            if (Components.Exists(c => c.InternalName.Equals(iniName, StringComparison.OrdinalIgnoreCase)))
+                throw new ArgumentException("Two components cannot share the same internal name.");
+
+            var componentSection = iniFile.GetSection(iniName);
+
+            var component = new Component<T>();
+            component.ReadOptionsFromIniSection(componentSection);
+
+            Components.Add(component);
+            return component;
+        }
+
+        /// <summary>
+        /// Verifies that components do not contain duplicate file entries.
+        /// </summary>
+        private void SanityCheckComponents()
+        {
+            var paths = new List<string>();
+
+            foreach (var component in Components)
+            {
+                foreach (T fileInfo in component.FileInfos)
                 {
-                    var fileInfo = new T();
-                    fileInfo.Parse(parts);
+                    if (paths.Exists(p => fileInfo.FilePath.Equals(p, StringComparison.OrdinalIgnoreCase)))
+                        throw new ParseException("File is included in multiple components: " + fileInfo.FilePath);
 
-                    FileInfos.Add(fileInfo);
+                    paths.Add(fileInfo.FilePath);
                 }
-                catch (FormatException) { UpdaterLogger.Log("FormatException when parsing file information, INI key " + key); }
-                catch (ParseException) { UpdaterLogger.Log("ParseException when parsing file information, INI key: " + key); }
             }
         }
 
@@ -96,12 +136,22 @@ namespace Rampastring.Updater.BuildInfo
             iniFile.AddSection(versionSection);
             ProductVersionInfo.Write(versionSection);
 
-            var filesSection = new IniSection(FILES_SECTION);
-            iniFile.AddSection(filesSection);
-
-            for (int i = 0; i < FileInfos.Count; i++)
+            var componentsSection = new IniSection(COMPONENTS_SECTION);
+            iniFile.AddSection(componentsSection);
+            for (int i = 0; i < Components.Count; i++)
             {
-                filesSection.SetStringValue(i.ToString(), FileInfos[i].GetString());
+                componentsSection.AddKey(i.ToString(CultureInfo.InvariantCulture), Components[i].InternalName);
+            }
+
+            for (int i = 0; i < Components.Count; i++)
+            {
+                var component = Components[i];
+                iniFile.SetStringValue(component.InternalName, nameof(component.UIName), component.UIName);
+                iniFile.SetBooleanValue(component.InternalName, nameof(component.Optional), component.Optional);
+
+                var filesSection = new IniSection(component.InternalName + "." + FILES_SECTION);
+                iniFile.AddSection(filesSection);
+                component.WriteFilesToIniSection(filesSection);
             }
 
             iniFile.WriteIniFile();
